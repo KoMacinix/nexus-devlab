@@ -1,0 +1,8 @@
+# Dépendances
+node_modules/
+__pycache__/
+*.pyc
+# Build
+dist/
+build/
+.next/

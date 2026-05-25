@@ -1,0 +1,14 @@
+# Dépendances
+node_modules/
+__pycache__/
+*.pyc
+# Variables d'environnement
+.env
+*.env
+# Base de données locale
+*.sqlite
+*.db
+# Build
+dist/
+build/
+.next/
