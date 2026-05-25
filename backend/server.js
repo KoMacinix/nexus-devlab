@@ -7,26 +7,28 @@ const { Server } = require("socket.io");
 
 // ── Config ──
 const PORT = process.env.PORT || 4000;
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 const app = express();
 const server = http.createServer(app);
 
 // ── Socket.IO ──
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin: [FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"],
     methods: ["GET", "POST"],
   },
 });
 
 // ── Middleware ──
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000"],
+  origin: [FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"],
 }));
 app.use(express.json());
 
 // ── Connexions BD ──
 const connectMongo = require("./config/mongo");
-const { connectSQLite } = require("./config/sqlite");
+const { connectPostgres } = require("./config/postgres");
 
 // ── Routes ──
 const authRoutes = require("./routes/auth");
@@ -67,8 +69,8 @@ async function start() {
   // 1. MongoDB (pour Arena + Auth)
   await connectMongo();
 
-  // 2. SQLite (pour StockOS, Forge, ShowPass)
-  connectSQLite();
+  // 2. PostgreSQL/Neon (pour StockOS, Forge, ShowPass)
+  await connectPostgres();
 
   // 3. Socket.IO
   initQuizSocket(io);

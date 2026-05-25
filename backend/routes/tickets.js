@@ -1,9 +1,8 @@
 const express = require("express");
-const { getDB } = require("../config/sqlite");
+const { getPool } = require("../config/postgres");
 
 const router = express.Router();
 
-// ── Simulation des Data Annotations C# (.NET validation) ──
 function validateClient(client) {
   const errors = {};
   if (!client.nom) errors["Client.Nom"] = "Le nom est obligatoire";
@@ -29,7 +28,7 @@ function validateCommande(commande) {
   return errors;
 }
 
-// ── GET /api/tickets/types ── Liste des types de billets
+// ── GET /api/tickets/types ──
 router.get("/types", (_req, res) => {
   res.json([
     { name: "Standard", price: 49.99, description: "Accès général au concert" },
@@ -38,88 +37,66 @@ router.get("/types", (_req, res) => {
   ]);
 });
 
-// ── POST /api/tickets/commande ── Créer une commande (simule CommandeController.Create POST)
-router.post("/commande", (req, res) => {
+// ── POST /api/tickets/commande ──
+router.post("/commande", async (req, res) => {
   try {
     const { client, commande } = req.body;
 
-    // Validation (simule ModelState.IsValid + Data Annotations)
     const clientErrors = validateClient(client || {});
     const commandeErrors = validateCommande(commande || {});
     const allErrors = { ...clientErrors, ...commandeErrors };
-
     if (Object.keys(allErrors).length > 0) {
       return res.status(422).json({ errors: allErrors, valid: false });
     }
 
-    const db = getDB();
+    const pool = getPool();
 
-    // Insérer le client (simule _context.Clients.Add())
-    const clientInfo = db
-      .prepare(
-        "INSERT INTO ticket_clients (nom, prenom, telephone, date_naissance, adresse) VALUES (?, ?, ?, ?, ?)"
-      )
-      .run(client.nom, client.prenom, client.telephone, client.dateNaissance, client.adresse);
+    const clientRes = await pool.query(
+      "INSERT INTO ticket_clients (nom, prenom, telephone, date_naissance, adresse) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+      [client.nom, client.prenom, client.telephone, client.dateNaissance, client.adresse]
+    );
+    const savedClient = clientRes.rows[0];
 
-    // Insérer la commande (simule _context.Commandes.Add())
-    const commandeInfo = db
-      .prepare(
-        "INSERT INTO ticket_commandes (client_id, type_billet, nombre_billets, date_commande) VALUES (?, ?, ?, ?)"
-      )
-      .run(
-        clientInfo.lastInsertRowid,
-        commande.typeBillet,
-        Number(commande.nombreBillets),
-        new Date().toISOString()
-      );
+    const commandeRes = await pool.query(
+      "INSERT INTO ticket_commandes (client_id, type_billet, nombre_billets, date_commande) VALUES ($1,$2,$3,$4) RETURNING *",
+      [savedClient.id, commande.typeBillet, Number(commande.nombreBillets), new Date().toISOString()]
+    );
+    const savedCommande = commandeRes.rows[0];
 
-    // Retourner la confirmation (simule Confirmation view)
-    const savedClient = db.prepare("SELECT * FROM ticket_clients WHERE id = ?").get(clientInfo.lastInsertRowid);
-    const savedCommande = db.prepare("SELECT * FROM ticket_commandes WHERE id = ?").get(commandeInfo.lastInsertRowid);
-
-    res.status(201).json({
-      commande: savedCommande,
-      client: savedClient,
-      message: "Commande confirmée !",
-    });
+    res.status(201).json({ commande: savedCommande, client: savedClient, message: "Commande confirmée !" });
   } catch (err) {
     console.error("Ticket error:", err);
     res.status(500).json({ error: "Erreur lors de la création de la commande" });
   }
 });
 
-// ── GET /api/tickets/commandes ── Liste toutes les commandes (simule Include + LINQ)
-router.get("/commandes", (_req, res) => {
+// ── GET /api/tickets/commandes ──
+router.get("/commandes", async (_req, res) => {
   try {
-    const db = getDB();
-    const rows = db
-      .prepare(
-        `SELECT c.*, cl.nom, cl.prenom, cl.telephone, cl.adresse
-         FROM ticket_commandes c
-         JOIN ticket_clients cl ON c.client_id = cl.id
-         ORDER BY c.date_commande DESC`
-      )
-      .all();
+    const { rows } = await getPool().query(
+      `SELECT c.*, cl.nom, cl.prenom, cl.telephone, cl.adresse
+       FROM ticket_commandes c
+       JOIN ticket_clients cl ON c.client_id = cl.id
+       ORDER BY c.date_commande DESC`
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Erreur lecture commandes" });
   }
 });
 
-// ── GET /api/tickets/commande/:id ── Détail d'une commande (simule Confirmation GET)
-router.get("/commande/:id", (req, res) => {
+// ── GET /api/tickets/commande/:id ──
+router.get("/commande/:id", async (req, res) => {
   try {
-    const db = getDB();
-    const row = db
-      .prepare(
-        `SELECT c.*, cl.nom, cl.prenom, cl.telephone, cl.date_naissance, cl.adresse
-         FROM ticket_commandes c
-         JOIN ticket_clients cl ON c.client_id = cl.id
-         WHERE c.id = ?`
-      )
-      .get(req.params.id);
-    if (!row) return res.status(404).json({ error: "Commande introuvable" });
-    res.json(row);
+    const { rows } = await getPool().query(
+      `SELECT c.*, cl.nom, cl.prenom, cl.telephone, cl.date_naissance, cl.adresse
+       FROM ticket_commandes c
+       JOIN ticket_clients cl ON c.client_id = cl.id
+       WHERE c.id = $1`,
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: "Commande introuvable" });
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Erreur lecture commande" });
   }
