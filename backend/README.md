@@ -8,7 +8,7 @@ Serveur Express.js unifié qui expose 5 modules.
 |-----------|-------------|
 | Runtime | Node.js 18+, Express.js 4 |
 | Auth | JSON Web Tokens, bcryptjs, AES-256-CBC (crypto) |
-| Base de données | MongoDB (Mongoose) — quiz/joueurs, SQLite (better-sqlite3) — inventaire/store/tickets |
+| Base de données | MongoDB (Mongoose) — quiz/joueurs, PostgreSQL/Neon (pg) — inventaire/store/tickets |
 | Temps réel | Socket.IO 4 |
 | Protocole | SOAP/XML simulé (xml2js) |
 | Outils | dotenv, cors, nodemon |
@@ -22,7 +22,7 @@ backend/
 ├── .env.example        Variables d'environnement
 ├── config/
 │   ├── mongo.js        Connexion MongoDB
-│   └── sqlite.js       SQLite (4 tables: products, store_products, ticket_clients, ticket_commandes)
+│   └── postgres.js     PostgreSQL/Neon (4 tables: products, store_products, ticket_clients, ticket_commandes)
 ├── middleware/
 │   └── auth.js         Middleware JWT
 ├── models/

@@ -4,10 +4,10 @@ const NAV = [
   { to: "/", label: "Accueil" },
   { to: "/geointel", label: "🌍 GeoIntel", color: "text-nexus-green" },
   { to: "/stockos", label: "📦 StockOS", color: "text-nexus-purple" },
-  { to: "/arena", label: "⚡ Arena", color: "text-nexus-red" },
-  { to: "/forge", label: "🔐 Forge", color: "text-nexus-yellow" },
-  { to: "/showpass", label: "🎫 ShowPass", color: "text-nexus-blue" },
-  { to: "/floranet", label: "🔥 FloraNet", color: "text-orange-400" },
+  { to: "/arena", label: "📖 Tookah", color: "text-nexus-red" },
+  { to: "/forge", label: "🍊 Tutti Frutti", color: "text-nexus-yellow" },
+  { to: "/showpass", label: "🎫 TicketConcert", color: "text-nexus-blue" },
+  { to: "/floranet", label: "🌿 FloraNet", color: "text-orange-400" },
 ];
 
 export default function Navbar() {

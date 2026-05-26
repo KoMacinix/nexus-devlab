@@ -1,224 +1,485 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import socket from "../socket";
 
-/* ── Tookah design: radial gradient, glassmorphism, neon cyan, Poppins ── */
+/**
+ * Tookah — page Arena.
+ *
+ * Reproduit fidèlement l'UI/UX du projet Tookah original (socket-io-client) :
+ *   - App.js d'origine : toggle "QUITTER LE JEU" / "REPRENDRE LE JEU" qui
+ *     démonte/remonte le composant client (= reset socket complet).
+ *   - ClientComponent.js d'origine : états, événements socket, timer, rendu.
+ *   - index.css d'origine : gradient orange, Segoe UI, .section-card colorées.
+ *
+ * Adaptations pour le contexte hébergé (Render / OVH) :
+ *   - Le socket utilise le client partagé ../socket.js qui pointe sur
+ *     VITE_BACKEND_URL (URL Render du backend en prod).
+ *   - Le wrapper se loge SOUS la navbar nexus (qui est sticky, hauteur 56px)
+ *     pour rester cohérent avec le reste du portfolio — sans rien changer
+ *     au rendu intérieur de Tookah.
+ *   - Le CSS est scopé sous `.tookah-scope` pour ne pas polluer le site.
+ */
 
-export default function Arena() {
-  const [phase, setPhase] = useState("lobby");
-  const [name, setName] = useState("");
+// ── Styles scopés sous `.tookah-scope` — reprise du index.css original ──
+const TOOKAH_CSS = `
+/* Wrapper plein écran sous la navbar nexus (sticky, h-14 = 56px) */
+.tookah-page-host {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: linear-gradient(to right, #ff6239, #fe944a);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 🎨 Arrière-plan général — équivalent du body original */
+.tookah-scope {
+  min-height: 100%;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #ff6239, #fe944a);
+  color: #fff;
+  text-align: center;
+  overflow-x: hidden;
+  padding-bottom: 40px;
+}
+
+/* 🌟 En-tête général */
+.tookah-scope h1,
+.tookah-scope h2,
+.tookah-scope h3,
+.tookah-scope h4 {
+  margin: 0.8rem 0;
+  font-weight: 700;
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+  color: #fff;
+}
+
+/* 📝 Champ pseudo */
+.tookah-scope input {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  margin: 0.5rem;
+  font-size: 1rem;
+  outline: none;
+  width: 250px;
+  text-align: center;
+  background: #fff;
+  color: #333;
+}
+
+/* 🔘 Boutons */
+.tookah-scope button {
+  margin: 0.5rem;
+  padding: 0.8rem 1.6rem;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  border: none;
+  background: #21264b;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+.tookah-scope button:hover {
+  background: #343a6a;
+  transform: scale(1.05);
+}
+
+/* ✅ Mise en avant de la réponse choisie */
+.tookah-scope .correct {
+  background: #28a745 !important;
+  color: #fff !important;
+}
+.tookah-scope .wrong {
+  background: #dc3545 !important;
+  color: #fff !important;
+}
+
+/* 🎴 Style des blocs (cartes séparées) */
+.tookah-scope .section-card {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin: 1.2rem auto;
+  max-width: 650px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  text-align: center;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Variantes par type de carte */
+.tookah-scope .player-info   { background: rgba(0, 0, 0, 0.3); }
+.tookah-scope .join-card     { background: rgba(255, 255, 255, 0.18); }
+.tookah-scope .question-card {
+  background: rgba(0, 102, 204, 0.2);
+  border: 2px solid rgba(0, 102, 204, 0.4);
+}
+.tookah-scope .results-card  {
+  background: rgba(40, 167, 69, 0.2);
+  border: 2px solid rgba(40, 167, 69, 0.4);
+}
+.tookah-scope .leaderboard-card {
+  background: rgba(255, 215, 0, 0.2);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+}
+.tookah-scope .final-card {
+  background: rgba(220, 53, 69, 0.2);
+  border: 2px solid rgba(220, 53, 69, 0.4);
+}
+
+/* Liste des réponses */
+.tookah-scope ul,
+.tookah-scope ol {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.tookah-scope ul li,
+.tookah-scope ol li {
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.4rem auto;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  max-width: 500px;
+  font-size: 1.2rem;
+  text-align: left;
+  color: #fff;
+}
+
+/* Bloc centré */
+.tookah-scope .centered-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 56px - 100px); /* navbar + bouton header */
+  text-align: center;
+  width: 90%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Texte des questions et messages */
+.tookah-scope .game-text {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0.6rem 0;
+}
+
+/* Groupe de boutons de réponse */
+.tookah-scope .answer-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Bouton principal (App.js d'origine) — fixed mais SOUS la navbar nexus */
+.tookah-scope .app-toggle-button {
+  position: fixed;
+  top: 76px; /* 56px navbar + 20px d'origine */
+  left: 20px;
+  z-index: 1000;
+}
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ClientComponent — fidèle à socket-io-client/src/ClientComponent.js
+// ─────────────────────────────────────────────────────────────────────────────
+function ClientComponent() {
+  const [playerName, setPlayerName] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [joined, setJoined] = useState(false);
   const [question, setQuestion] = useState(null);
-  const [selected, setSelected] = useState(null);
+  const [message, setMessage] = useState("");
   const [results, setResults] = useState(null);
-  const [finalData, setFinalData] = useState(null);
+  const [finalResults, setFinalResults] = useState(null);
   const [score, setScore] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [message, setMessage] = useState("");
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [waitingForPlayers, setWaitingForPlayers] = useState(false);
+  const [waitingForAnswers, setWaitingForAnswers] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
+
   const timerRef = useRef(null);
 
+  // --- Rejoindre le jeu ---
+  const joinGame = () => {
+    if (playerName && socket) {
+      socket.emit("joinGame", playerName);
+      setJoined(true);
+      setFinalResults(null);
+      setMessage("En attente d'autres joueurs...");
+      setWaitingForPlayers(true);
+    }
+  };
+
+  // --- Répondre à une question ---
+  const answerQuestion = (answer) => {
+    if (socket && playerName && question) {
+      setSelectedAnswer(answer);
+      socket.emit("answer", { answer, questionId: question._id });
+      setMessage("En attente des autres joueurs...");
+      setWaitingForAnswers(true);
+    }
+  };
+
+  // --- Connexion Socket.IO ---
   useEffect(() => {
+    // On (re)connecte le socket partagé à chaque montage du client.
     socket.connect();
-    socket.on("joined", (data) => setDisplayName(data.finalName));
-    socket.on("statusMessage", (data) => {
+
+    // Quand le joueur rejoint le jeu
+    const onJoined = (data) => {
+      setDisplayName(data.finalName);
+      // L'événement original n'envoie pas de score ; on garde l'init local à 0.
+      if (typeof data.score === "number") setScore(data.score);
+    };
+
+    // --- Messages d'état ---
+    const onStatusMessage = (data) => {
       setMessage(data.text);
-      if (data.type === "WAIT_PLAYERS") setPhase("waiting");
-    });
-    socket.on("newQuestion", (data) => {
-      setQuestion(data); setSelected(null); setResults(null);
-      setMessage(""); setPhase("question");
+      setWaitingForPlayers(data.type === "WAIT_PLAYERS");
+      setWaitingForAnswers(data.type === "WAIT_ANSWERS");
+    };
+
+    // --- Nouvelle question ---
+    const onNewQuestion = (data) => {
+      setQuestion(data);
+      setResults(null);
+      setSelectedAnswer(null);
+      setWaitingForAnswers(false);
+      setMessage("");
+
       if (data.duration) {
         setTimeLeft(data.duration);
-        clearInterval(timerRef.current);
+        if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = setInterval(() => {
-          setTimeLeft((t) => { if (t <= 1) { clearInterval(timerRef.current); return 0; } return t - 1; });
+          setTimeLeft((prev) => {
+            if (prev <= 1) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+              return 0;
+            }
+            return prev - 1;
+          });
         }, 1000);
       }
-    });
-    socket.on("questionResults", (data) => {
-      clearInterval(timerRef.current); setResults(data); setQuestion(null);
-      setScore(data.score); setLeaderboard(data.leaderboard || []); setPhase("result"); setTimeLeft(null);
-    });
-    socket.on("finalResults", (data) => {
-      clearInterval(timerRef.current); setFinalData(data);
-      setLeaderboard(data.leaderboard || []); setPhase("final"); setTimeLeft(null);
-    });
-    return () => { socket.off("joined"); socket.off("statusMessage"); socket.off("newQuestion"); socket.off("questionResults"); socket.off("finalResults"); socket.disconnect(); clearInterval(timerRef.current); };
+    };
+
+    // --- Résultats d'une question ---
+    const onQuestionResults = (data) => {
+      setResults(data);
+      setQuestion(null);
+      setScore(data.score);
+      setLeaderboard(data.leaderboard || []);
+      setSelectedAnswer(null);
+      setWaitingForAnswers(false);
+      setTimeLeft(null);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+
+    // --- Fin de partie ---
+    const onFinalResults = (data) => {
+      setFinalResults(data);
+      if (data && data.leaderboard) setLeaderboard(data.leaderboard);
+      setQuestion(null);
+      setResults(null);
+      setSelectedAnswer(null);
+      setWaitingForAnswers(false);
+      setWaitingForPlayers(false);
+      setTimeLeft(null);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+
+    socket.on("joined", onJoined);
+    socket.on("statusMessage", onStatusMessage);
+    socket.on("newQuestion", onNewQuestion);
+    socket.on("questionResults", onQuestionResults);
+    socket.on("finalResults", onFinalResults);
+
+    // Cleanup : équivalent du `newSocket.disconnect()` de l'original.
+    return () => {
+      socket.off("joined", onJoined);
+      socket.off("statusMessage", onStatusMessage);
+      socket.off("newQuestion", onNewQuestion);
+      socket.off("questionResults", onQuestionResults);
+      socket.off("finalResults", onFinalResults);
+      socket.disconnect();
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const join = useCallback(() => { if (!name.trim()) return; socket.emit("joinGame", name.trim()); setScore(0); setPhase("waiting"); setFinalData(null); setResults(null); }, [name]);
-  const answer = useCallback((a) => { if (selected || !question) return; setSelected(a); clearInterval(timerRef.current); socket.emit("answer", { answer: a, questionId: question._id }); setMessage("En attente des autres joueurs..."); }, [selected, question]);
-  const replay = useCallback(() => { setFinalData(null); setResults(null); setScore(0); socket.emit("joinGame", displayName || name); setPhase("waiting"); }, [displayName, name]);
+  return (
+    <div className="centered-block">
+      {/* Affichage du joueur */}
+      {joined && (
+        <div className="section-card player-info">
+          <p className="game-text">
+            Joueur : {displayName}
+          </p>
+          <p className="game-text">
+            Score : {score}
+          </p>
+        </div>
+      )}
 
-  function quitGame() {
-    socket.disconnect();
-    setPhase("lobby"); setName(""); setDisplayName(""); setQuestion(null);
-    setSelected(null); setResults(null); setFinalData(null); setScore(0);
-    setLeaderboard([]); setMessage(""); setTimeLeft(null);
-    clearInterval(timerRef.current);
-    socket.connect();
-  }
+      {/* Bloc rejoindre le jeu */}
+      {!joined && (
+        <div className="section-card join-card">
+          <input
+            type="text"
+            placeholder="Votre nom"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && joinGame()}
+          />
+          <button onClick={joinGame}>Rejoindre le jeu</button>
+        </div>
+      )}
+
+      {/* Question en cours */}
+      {question && (
+        <div className="section-card question-card">
+          <p className="game-text"> Question : {question.text}</p>
+          {timeLeft !== null && (
+            <p className="game-text">⏳ Temps restant : {timeLeft}s</p>
+          )}
+          <div className="answer-buttons">
+            <button
+              onClick={() => answerQuestion("vrai")}
+              disabled={selectedAnswer === "vrai"}
+              className={selectedAnswer === "vrai" ? "correct" : ""}
+            >
+              ✅ Vrai
+            </button>
+            <button
+              onClick={() => answerQuestion("faux")}
+              disabled={selectedAnswer === "faux"}
+              className={selectedAnswer === "faux" ? "wrong" : ""}
+            >
+              ❌ Faux
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Messages d'attente */}
+      {message &&
+        ((waitingForPlayers && (!results || message.includes("♻️"))) ||
+          (waitingForAnswers && !results)) && (
+          <div className="section-card message-card">
+            <p className="game-text">{message}</p>
+          </div>
+        )}
+
+      {/* Résultats de la question */}
+      {results && (
+        <>
+          <div className="section-card results-card">
+            <h3 className="game-text">📊 Résultats</h3>
+          </div>
+
+          <div className="section-card">
+            <p className="game-text">
+              ✅ Bonne réponse : {results.correctAnswer}
+            </p>
+          </div>
+
+          <div className="section-card">
+            <p className="game-text">
+              ⚡ Joueur le plus rapide :{" "}
+              {results.fastestPlayer || "Aucune bonne réponse"}
+            </p>
+          </div>
+
+          <div className="section-card">
+            <h4 className="game-text">📝 Réponses de tous :</h4>
+            <ul>
+              {Object.entries(results.allAnswers).map(([player, data]) => (
+                <li key={player} className="game-text">
+                  {player} → {data.answer} ({data.time / 1000}s)
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+
+      {/* Fin de partie */}
+      {finalResults && (
+        <>
+          <div className="section-card final-card">
+            <h2 className="game-text">🏁 Fin de la partie 🏁</h2>
+            <p className="game-text">{finalResults.message}</p>
+          </div>
+
+          {leaderboard.length > 0 && (
+            <div className="section-card leaderboard-card">
+              <h3 className="game-text">🏆 Classement</h3>
+              <ol>
+                {leaderboard.map((player, index) => (
+                  <li key={index} className="game-text">
+                    {player.name} → {player.score} pts
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          <div className="section-card">
+            <button
+              onClick={() => {
+                setFinalResults(null);
+                joinGame();
+                setMessage("En attente d'autres joueurs...");
+                setWaitingForPlayers(true);
+              }}
+            >
+              Rejoindre une nouvelle partie
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Arena (wrapper App.js original) — toggle QUITTER / REPRENDRE LE JEU
+// ─────────────────────────────────────────────────────────────────────────────
+export default function Arena() {
+  const [loadClient, setLoadClient] = useState(true);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-        .tookah-wrap {
-          min-height: calc(100vh - 200px);
-          display: flex; justify-content: center; align-items: flex-start;
-          padding: 40px 16px;
-          background: radial-gradient(circle at top left, #141e30, #243b55);
-          margin: -16px; margin-top: 0;
-          font-family: 'Poppins', sans-serif; color: #f5f5f5;
-        }
-        .centered-block {
-          margin-top: 40px;
-          background: rgba(255,255,255,0.05);
-          border: 2px solid rgba(255,255,255,0.15);
-          border-radius: 20px; padding: 30px;
-          max-width: 600px; width: 100%;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          text-align: center;
-          backdrop-filter: blur(10px);
-          animation: tookahFadeIn 0.6s ease;
-        }
-        @keyframes tookahFadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
-        .centered-block h2, .centered-block h3, .centered-block h4 {
-          color: #00ffe5; margin-bottom: 15px;
-          text-shadow: 0 0 8px rgba(0,255,229,0.6);
-        }
-        .centered-block .game-text { font-size: 18px; margin: 8px 0; }
-        .centered-block input[type="text"] {
-          padding: 12px 15px; border-radius: 12px; border: none; outline: none;
-          font-size: 16px; margin-right: 10px;
-          background: rgba(255,255,255,0.2); color: #fff;
-          transition: 0.3s; font-family: 'Poppins', sans-serif;
-        }
-        .centered-block input:focus { background: rgba(255,255,255,0.3); box-shadow: 0 0 10px #00ffe5; }
-        .centered-block input::placeholder { color: rgba(255,255,255,0.6); }
-        .tookah-btn {
-          padding: 12px 20px; margin: 10px; border: none; border-radius: 15px;
-          font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s;
-          background: linear-gradient(135deg, #00ffe5, #008cba);
-          color: #0d1b2a; box-shadow: 0 5px 15px rgba(0,255,229,0.3);
-          font-family: 'Poppins', sans-serif;
-        }
-        .tookah-btn:hover { transform: scale(1.05); box-shadow: 0 6px 18px rgba(0,255,229,0.5); }
-        .tookah-btn:disabled { background: #555; color: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
-        .tookah-btn-danger { background: linear-gradient(135deg, #ff6b6b, #c0392b); box-shadow: 0 5px 15px rgba(255,107,107,0.3); }
-        .tookah-btn-quit {
-          background: linear-gradient(135deg, #ff6b6b, #c0392b);
-          box-shadow: 0 5px 15px rgba(255,107,107,0.3);
-          font-size: 13px; padding: 8px 16px;
-        }
-        .timer {
-          font-size: 20px; font-weight: bold; margin: 15px 0; padding: 10px;
-          border-radius: 12px; background: rgba(0,255,229,0.1);
-          border: 1px solid rgba(0,255,229,0.4); display: inline-block;
-          animation: pulse 1s infinite;
-        }
-        @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(0,255,229,0.4)} 70%{box-shadow:0 0 0 12px rgba(0,255,229,0)} 100%{box-shadow:0 0 0 0 rgba(0,255,229,0)} }
-        .tookah-list { list-style: none; padding: 0; }
-        .tookah-list li {
-          background: rgba(255,255,255,0.08); margin: 6px 0; padding: 10px;
-          border-radius: 10px; transition: 0.3s; text-align: left;
-        }
-        .tookah-list li:hover { background: rgba(0,255,229,0.15); }
-        .player-info { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; opacity: 0.7; }
-      `}</style>
+    <div className="tookah-page-host">
+      <style>{TOOKAH_CSS}</style>
+      <div className="tookah-scope">
+        <button
+          className="app-toggle-button"
+          onClick={() => setLoadClient((prev) => !prev)}
+        >
+          {loadClient ? "QUITTER LE JEU" : "REPRENDRE LE JEU"}
+        </button>
 
-      <div className="tookah-wrap">
-        <div className="centered-block">
-          {/* QUITTER LE JEU button at top */}
-          {phase !== "lobby" && (
-            <div style={{marginBottom: 16}}>
-              <button className="tookah-btn tookah-btn-quit" onClick={quitGame}>
-                🚪 QUITTER LE JEU
-              </button>
-            </div>
-          )}
-
-          {/* Player info */}
-          {phase !== "lobby" && (
-            <div className="player-info">
-              <span>👤 {displayName || name} : <strong>{score} pts</strong></span>
-              <span>{phase === "waiting" ? "🔵 Attente" : phase === "question" ? "🟢 En jeu" : "📊 Résultats"}</span>
-            </div>
-          )}
-
-          {/* LOBBY */}
-          {phase === "lobby" && (
-            <>
-              <h2>Tookah</h2>
-              <p style={{fontSize:14, opacity:0.6}}>Quiz temps réel · Socket.IO · Ouvrez 2 onglets</p>
-              <div style={{marginTop:20}}>
-                <input type="text" placeholder="Votre nom" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && join()} />
-                <button className="tookah-btn" onClick={join}>🚀 Rejoindre le jeu</button>
-              </div>
-            </>
-          )}
-
-          {/* WAITING */}
-          {phase === "waiting" && (
-            <>
-              <h3>⏳ En attente</h3>
-              <p className="game-text">{message || "En attente d'autres joueurs..."}</p>
-            </>
-          )}
-
-          {/* QUESTION */}
-          {phase === "question" && question && (
-            <>
-              {timeLeft !== null && <div className="timer">⏳ Temps restant : {timeLeft}s</div>}
-              <h3>❓ {question.text}</h3>
-              {!selected ? (
-                <div>
-                  <button className="tookah-btn" onClick={() => answer("vrai")} style={{backgroundColor: selected === "vrai" ? "lightgreen" : ""}}>✅ Vrai</button>
-                  <button className="tookah-btn tookah-btn-danger" onClick={() => answer("faux")} style={{backgroundColor: selected === "faux" ? "lightcoral" : ""}}>❌ Faux</button>
-                </div>
-              ) : (
-                <p className="game-text">{message}</p>
-              )}
-            </>
-          )}
-
-          {/* RESULTS */}
-          {phase === "result" && results && (
-            <>
-              <h3>📊 Résultats</h3>
-              <p className="game-text">Bonne réponse : <strong>{results.correctAnswer}</strong></p>
-              <p className="game-text">⚡ Plus rapide : {results.fastestPlayer || "Aucun"}</p>
-              <h4>Réponses :</h4>
-              <ul className="tookah-list">
-                {Object.entries(results.allAnswers).map(([player, data]) => (
-                  <li key={player}>{player} → {data.answer} ({(data.time/1000).toFixed(1)}s)</li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {/* FINAL */}
-          {phase === "final" && (
-            <>
-              <h2>🏆 Fin de la partie</h2>
-              {finalData?.message && <p className="game-text">{finalData.message}</p>}
-              {leaderboard.length > 0 && (
-                <>
-                  <h3>Classement</h3>
-                  <ol style={{textAlign:"left", paddingLeft:20}}>
-                    {leaderboard.map((p, i) => (
-                      <li key={i} className="game-text">
-                        {i === 0 && "🥇"}{i === 1 && "🥈"}{i === 2 && "🥉"} {p.name} → {p.score} pts
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              )}
-              <button className="tookah-btn" onClick={replay}>🔄 Rejouer</button>
-            </>
-          )}
-        </div>
+        {loadClient && <ClientComponent />}
       </div>
-    </>
+    </div>
   );
 }

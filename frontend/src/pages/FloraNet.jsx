@@ -183,7 +183,7 @@ export default function FloraNet() {
       {!authenticated ? (
         <div className="fn-login-screen">
           <form className="fn-login-card" onSubmit={handleLogin}>
-            <div style={{textAlign:"center",fontSize:48,marginBottom:4}}>🔥</div>
+            <div style={{textAlign:"center",marginBottom:4}}><img src="/floranet-logo.svg" alt="Floranet" style={{width:64,height:64,margin:"0 auto"}} /></div>
             <h1>Floranet</h1>
             <p className="sub">Surveillance Incendies Forestiers</p>
             {loginErr && <div className="err">{loginErr}</div>}
@@ -198,7 +198,7 @@ export default function FloraNet() {
           {/* Header */}
           <header className="fn-header">
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:22}}>🔥</span>
+              <img src="/floranet-logo.svg" alt="Floranet" style={{width:28,height:28}} />
               <h1>Floranet — Surveillance Incendies</h1>
             </div>
             <div className="fn-header-info">

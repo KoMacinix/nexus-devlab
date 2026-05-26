@@ -2,6 +2,12 @@
 node_modules/
 __pycache__/
 *.pyc
+
+# Variables d'environnement
+.env
+*.env
+.env.local
+
 # Build
 dist/
 build/

@@ -1,15 +1,30 @@
+/**
+ * socket/quiz.js — Logique Socket.IO de Tookah (Arena).
+ *
+ * Reproduit fidèlement la logique du serveur Tookah original
+ * (socket-io-server/app.js), adaptée au backend unifié NEXUS DevLab.
+ *
+ *  - Lobby partagé en mémoire.
+ *  - 2 joueurs actifs minimum pour démarrer une partie.
+ *  - Une question = un timer de 10s ; le plus rapide à bien répondre marque 1 pt.
+ *  - Si tous ont répondu avant la fin du timer, on enchaîne immédiatement.
+ *  - Si la partie tombe sous 2 joueurs actifs en cours, elle est interrompue.
+ *  - Historique de chaque manche sauvegardé dans la collection MongoDB `games`.
+ */
+
 const Question = require("../models/Question");
 const Player = require("../models/Player");
 const Game = require("../models/Game");
 
-const QUESTION_DURATION = 10000; // 10 secondes
+const QUESTION_DURATION = 10000; // 10 secondes max par question
 
 /**
- * Initialise la logique Socket.IO pour le quiz Arena.
+ * Initialise la logique Socket.IO pour Tookah.
  * @param {import("socket.io").Server} io
  */
 function initQuizSocket(io) {
-  let lobby = [];
+  // ── Variables globales de jeu ──
+  let lobby = []; // [{ name, socketId, status: "inGame"|"finished", score }]
   let currentQuestion = null;
   let askedQuestions = new Set();
   let answers = {};
@@ -23,6 +38,7 @@ function initQuizSocket(io) {
 
     if (!question) {
       gameState = "FINISHED";
+
       const leaderboard = lobby
         .filter((p) => p.status === "inGame")
         .map((p) => ({ name: p.name, score: p.score }))
@@ -62,10 +78,12 @@ function initQuizSocket(io) {
       });
 
     clearTimeout(questionTimer);
-    questionTimer = setTimeout(() => processResults(), QUESTION_DURATION);
+    questionTimer = setTimeout(() => {
+      processResults();
+    }, QUESTION_DURATION);
   }
 
-  // ── Calculer les résultats ──
+  // ── Calculer résultats ──
   async function processResults() {
     if (!currentQuestion) return;
     clearTimeout(questionTimer);
@@ -81,12 +99,15 @@ function initQuizSocket(io) {
       }
     }
 
+    // Score du plus rapide
     if (fastestPlayer) {
       const playerObj = lobby.find((p) => p.name === fastestPlayer);
-      if (playerObj) playerObj.score += 1;
+      if (playerObj) {
+        playerObj.score += 1;
+      }
     }
 
-    // Sauvegarder la partie dans MongoDB
+    // Historique de la manche
     await Game.create({
       players: Object.keys(answers),
       question: currentQuestion.text,
@@ -94,11 +115,13 @@ function initQuizSocket(io) {
       fastestPlayer,
     });
 
+    // Classement
     const leaderboard = lobby
       .filter((p) => p.status === "inGame")
       .map((p) => ({ name: p.name, score: p.score }))
       .sort((a, b) => b.score - a.score);
 
+    // Envoi des résultats
     lobby
       .filter((p) => p.status === "inGame")
       .forEach((player) => {
@@ -113,36 +136,40 @@ function initQuizSocket(io) {
 
     currentQuestion = null;
 
+    // Question suivante après 3s, si toujours assez de joueurs
     setTimeout(() => {
       const activePlayers = lobby.filter((p) => p.status === "inGame");
       if (activePlayers.length >= 2) {
         startNextQuestion();
       } else {
         gameState = "WAITING";
+        console.log("⏸️  Attente de joueurs pour nouvelle partie");
       }
     }, 3000);
+
+    console.log("📊 Résultats de la question :", answers);
+    console.log("Joueur le plus rapide :", fastestPlayer);
   }
 
   // ── Connexion socket ──
   io.on("connection", (socket) => {
-    console.log("✅ Client connecté :", socket.id);
+    console.log("✅ Nouveau client connecté :", socket.id);
 
-    // Rejoindre le jeu
+    // --- Quand un joueur rejoint le jeu ---
     socket.on("joinGame", async (playerName) => {
+      // Gestion des noms dupliqués
       let finalName = playerName;
       let suffix = 1;
       while (lobby.find((p) => p.name === finalName)) {
         finalName = `${playerName}_${suffix}`;
         suffix++;
       }
-
       io.to(socket.id).emit("joined", { finalName });
 
       let player = lobby.find((p) => p.socketId === socket.id);
       if (player) {
-        player.status = "inGame";
+        player.status = "inGame"; // Réinitialisation pour nouvelle partie
         player.name = finalName;
-        player.score = 0;
       } else {
         player = { name: finalName, socketId: socket.id, status: "inGame", score: 0 };
         lobby.push(player);
@@ -150,12 +177,14 @@ function initQuizSocket(io) {
 
       await Player.findOneAndUpdate(
         { socketId: socket.id },
-        { name: finalName, score: 0 },
+        { name: finalName },
         { upsert: true, new: true }
       );
 
       console.log("🟢 Joueur rejoint :", finalName);
+      console.log("Lobby actuel :", lobby.map((p) => `${p.name}(${p.status})`));
 
+      // Status initial
       if (gameState === "WAITING") {
         io.to(socket.id).emit("statusMessage", {
           type: "WAIT_PLAYERS",
@@ -169,20 +198,23 @@ function initQuizSocket(io) {
         });
       }
 
+      // Démarrer la partie si assez de joueurs actifs
       const activePlayers = lobby.filter((p) => p.status === "inGame");
       if (activePlayers.length >= 2 && gameState !== "IN_PROGRESS") {
         startNextQuestion();
       }
     });
 
-    // Réponse du joueur
+    // --- Quand un joueur répond ---
     socket.on("answer", (data) => {
       if (!currentQuestion) return;
+
       const player = lobby.find((p) => p.socketId === socket.id && p.status === "inGame");
       if (!player) return;
 
       const timeTaken = Date.now() - questionStartTime;
       answers[player.name] = { answer: data.answer, time: timeTaken };
+      console.log(`${player.name} a choisi ${data.answer}`);
 
       if (Object.keys(answers).length === lobby.filter((p) => p.status === "inGame").length) {
         processResults();
@@ -194,7 +226,7 @@ function initQuizSocket(io) {
       }
     });
 
-    // Déconnexion
+    // --- Déconnexion ---
     socket.on("disconnect", async () => {
       console.log("❌ Joueur déconnecté :", socket.id);
 
@@ -205,8 +237,11 @@ function initQuizSocket(io) {
         await Player.deleteOne({ socketId: socket.id });
       }
 
+      console.log("Lobby après déconnexion :", lobby.map((p) => `${p.name}(${p.status})`));
+
       const activePlayers = lobby.filter((p) => p.status === "inGame");
 
+      // Si moins de 2 joueurs → reset partie (pendant question OU pendant résultats)
       if (activePlayers.length < 2 && gameState === "IN_PROGRESS") {
         clearTimeout(questionTimer);
         currentQuestion = null;
@@ -217,7 +252,7 @@ function initQuizSocket(io) {
         lobby.forEach((p) => {
           io.to(p.socketId).emit("statusMessage", {
             type: "WAIT_PLAYERS",
-            text: "Partie interrompue, en attente de joueurs...",
+            text: "♻️ Partie interrompue, en attente de joueurs...",
           });
         });
       }

@@ -2,251 +2,190 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 const PROJECTS = [
-  {
-    icon: "🌍", name: "GeoIntel", origin: "Pays",
-    tagline: "Service SOAP · Données géopolitiques",
-    description: "Client consommant un web service SOAP pour interroger une base de pays. Authentification JWT et hachage bcrypt.",
-    color: "#00e5a0", to: "/geointel",
-    stack: ["Next.js", "Spring Boot", "SOAP/XML", "JWT", "bcrypt"],
-  },
-  {
-    icon: "📦", name: "StockOS", origin: "Inventaire",
-    tagline: "REST API · CRUD complet",
-    description: "Gestion d'inventaire avec CRUD complet et liste d'achat automatique quand le stock passe sous le seuil.",
-    color: "#7c5cfc", to: "/stockos",
-    stack: ["React", "Django/DRF", "SQLite", "Axios", "REST API"],
-  },
-  {
-    icon: "⚡", name: "Arena", origin: "Tookah",
-    tagline: "WebSocket · Temps réel",
-    description: "Quiz multijoueur en temps réel avec lobby dynamique, timer, leaderboard live et historique MongoDB.",
-    color: "#ff6b6b", to: "/arena",
-    stack: ["Socket.IO", "Express", "MongoDB", "Mongoose", "WebSockets"],
-  },
-  {
-    icon: "🔐", name: "Forge", origin: "htdocs",
-    tagline: "Laravel · PHP Auth · AES",
-    description: "Auth chiffrée AES (CryptoJS → PHP decrypt), verrouillage de compte, sessions, CRUD produits Laravel avec Eloquent et Blade.",
-    color: "#fbbf24", to: "/forge",
-    stack: ["PHP 8.2", "Laravel 12", "AES-256", "Eloquent", "Blade", "MySQL"],
-  },
-  {
-    icon: "🎫", name: "ShowPass", origin: "TicketConcert",
-    tagline: "ASP.NET Core · MVC · EF Core",
-    description: "Billetterie de concert ASP.NET Core MVC avec Entity Framework, Data Annotations, ViewModel et migrations SQL Server.",
-    color: "#38bdf8", to: "/showpass",
-    stack: ["C#", "ASP.NET Core 8", "EF Core", "SQL Server", "Razor"],
-  },
-  {
-    icon: "🔥", name: "FloraNet", origin: "Floranet_v4",
-    tagline: "IoT · LSTM · Leaflet · FastAPI",
-    description: "Système de détection d'incendies forestiers avec capteurs LoRa/ESP32, modèle LSTM (334K params), carte interactive et dashboard temps réel.",
-    color: "#ff6b00", to: "/floranet",
-    stack: ["PyTorch", "FastAPI", "LoRa", "Leaflet", "TDMA", "PostgreSQL"],
-  },
+  { icon: "🌍", name: "GeoIntel", origin: "Pays", tagline: "SOAP · JWT · Spring Boot", desc: "Client SOAP pour interroger des données géopolitiques, avec authentification JWT et hachage bcrypt.", color: "#00e5a0", to: "/geointel", stack: ["Next.js", "Spring Boot", "SOAP/XML", "JWT", "bcrypt"] },
+  { icon: "📦", name: "StockOS", origin: "Inventaire", tagline: "REST API · CRUD · Django", desc: "Gestion d'inventaire avec CRUD complet et liste d'achat auto quand le stock descend sous le seuil.", color: "#7c5cfc", to: "/stockos", stack: ["React", "Django/DRF", "SQLite", "Axios"] },
+  { icon: "📖", name: "Tookah", origin: "Tookah", tagline: "Socket.IO · Temps réel", desc: "Quiz multijoueur en temps réel. Lobby dynamique, timer, leaderboard live, historique MongoDB.", color: "#ff6b6b", to: "/arena", stack: ["Socket.IO", "Express", "MongoDB", "Mongoose"] },
+  { icon: "🍊", name: "Tutti Frutti", origin: "htdocs", tagline: "Laravel · AES · PHP Auth", desc: "Auth chiffrée AES, verrouillage de compte, CRUD produits style Laravel avec Eloquent et Blade.", color: "#fbbf24", to: "/forge", stack: ["PHP 8.2", "Laravel 12", "AES-256", "Eloquent", "MySQL"] },
+  { icon: "🎫", name: "TicketConcert", origin: "TicketConcert", tagline: "ASP.NET Core · EF Core", desc: "Billetterie concert avec Entity Framework, Data Annotations, ViewModel et migrations SQL Server.", color: "#38bdf8", to: "/showpass", stack: ["C#", "ASP.NET Core 8", "EF Core", "SQL Server", "Razor"] },
+  { icon: "🌿", name: "FloraNet", origin: "Floranet_v4", tagline: "IoT · LSTM · Leaflet", desc: "Détection d'incendies forestiers avec capteurs LoRa/ESP32, modèle LSTM, carte interactive et dashboard.", color: "#ff6b00", to: "/floranet", stack: ["PyTorch", "FastAPI", "LoRa", "Leaflet", "TDMA"] },
 ];
 
-const STACK_HIGHLIGHTS = [
-  "React", "Next.js", "Django", "Spring Boot", "Laravel",
-  "ASP.NET", "FastAPI", "PyTorch", "Socket.IO", "Leaflet",
-  "MongoDB", "PostgreSQL",
+const TYPED_PHRASES = [
+  "du SOAP au temps réel.",
+  "du PHP chiffré au MVC .NET.",
+  "de l'IoT au Deep Learning.",
+  "6 projets. 1 écosystème.",
 ];
 
-function useTypingEffect(words, speed = 100, pause = 2000) {
+function useTypewriter(phrases, typeSpeed = 60, deleteSpeed = 30, pause = 2500) {
   const [text, setText] = useState("");
-  const [wordIdx, setWordIdx] = useState(0);
-  const [charIdx, setCharIdx] = useState(0);
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const word = words[wordIdx];
-    const timeout = setTimeout(() => {
-      if (!deleting) {
-        setText(word.substring(0, charIdx + 1));
-        if (charIdx + 1 === word.length) {
-          setTimeout(() => setDeleting(true), pause);
-        } else {
-          setCharIdx(charIdx + 1);
-        }
-      } else {
-        setText(word.substring(0, charIdx));
-        if (charIdx === 0) {
-          setDeleting(false);
-          setWordIdx((wordIdx + 1) % words.length);
-        } else {
-          setCharIdx(charIdx - 1);
-        }
-      }
-    }, deleting ? speed / 2 : speed);
+    let idx = 0;
+    let charIdx = 0;
+    let deleting = false;
+    let timer;
 
-    return () => clearTimeout(timeout);
-  }, [charIdx, deleting, wordIdx, words, speed, pause]);
+    const tick = () => {
+      const word = phrases[idx];
+      if (!deleting) {
+        charIdx++;
+        setText(word.slice(0, charIdx));
+        if (charIdx === word.length) {
+          deleting = true;
+          timer = setTimeout(tick, pause);
+          return;
+        }
+        timer = setTimeout(tick, typeSpeed);
+      } else {
+        charIdx--;
+        setText(word.slice(0, charIdx));
+        if (charIdx === 0) {
+          deleting = false;
+          idx = (idx + 1) % phrases.length;
+        }
+        timer = setTimeout(tick, deleteSpeed);
+      }
+    };
+
+    timer = setTimeout(tick, typeSpeed);
+    return () => clearTimeout(timer);
+  }, [phrases, typeSpeed, deleteSpeed, pause]);
 
   return text;
 }
 
 export default function Home() {
-  const typedText = useTypingEffect(
-    ["du SOAP au temps réel", "du PHP chiffré au MVC .NET", "de l'IoT au Deep Learning", "6 projets, 1 écosystème"],
-    70, 2200
-  );
+  const typed = useTypewriter(TYPED_PHRASES);
 
   return (
     <>
       <style>{`
-        .home-hero {
-          padding: 60px 0 32px; text-align: center;
-          animation: homeSlideIn 0.7s ease-out;
-        }
-        @keyframes homeSlideIn { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
-        .home-hero h1 {
-          font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 900;
-          letter-spacing: -0.03em; line-height: 1.1; margin: 0 0 16px;
-          background: linear-gradient(135deg, #e0e0e8 0%, #7c5cfc 40%, #00e5a0 80%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .home-hero .subtitle {
-          font-size: 17px; color: #9090a8; max-width: 540px; margin: 0 auto 12px;
-          line-height: 1.6; font-weight: 400;
-        }
-        .home-typed {
-          font-family: 'JetBrains Mono', monospace; font-size: 14px;
-          color: #00e5a0; height: 22px; margin-bottom: 8px;
-        }
-        .home-typed::after { content: '▎'; animation: blink 0.8s step-end infinite; color: #7c5cfc; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .home-stack {
-          display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
-          margin: 20px auto 0; max-width: 560px;
-        }
-        .home-stack span {
-          font-family: 'JetBrains Mono', monospace; font-size: 11px;
-          padding: 3px 10px; border-radius: 99px;
-          color: #6b6b80; border: 1px solid #1e1e2a; background: #13131a;
-          transition: all 0.2s;
-        }
-        .home-stack span:hover { color: #e0e0e8; border-color: #7c5cfc40; background: #7c5cfc10; }
+        .home-wrap { padding-bottom: 48px; }
 
-        /* Cards grid */
-        .home-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 16px; margin-top: 40px;
+        /* Hero — épuré, pas d'effet exagéré */
+        .hero { padding: 56px 0 24px; }
+        .hero-title {
+          font-size: clamp(2rem, 5vw, 3.2rem);
+          font-weight: 900; letter-spacing: -0.03em;
+          color: #e8e8f0; margin: 0 0 14px; line-height: 1.15;
         }
-        .home-card {
+        .hero-title span { color: #7c5cfc; }
+        .hero-sub {
+          color: #8888a0; font-size: 15px; line-height: 1.7;
+          max-width: 520px; margin: 0 0 10px;
+        }
+        .hero-typed {
+          font-family: 'JetBrains Mono', monospace; font-size: 13px;
+          color: #00e5a0; margin-top: 6px; min-height: 20px;
+        }
+        .hero-typed::after { content: '|'; animation: caret 0.7s step-end infinite; margin-left: 1px; color: #7c5cfc; }
+        @keyframes caret { 50% { opacity: 0; } }
+
+        /* Grid de projets */
+        .projects-label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12px; color: #555570; letter-spacing: 2px;
+          text-transform: uppercase; margin: 36px 0 16px; padding-left: 2px;
+        }
+        .project-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 640px) { .project-grid { grid-template-columns: 1fr; } }
+
+        .pcard {
           display: block; text-decoration: none; color: inherit;
-          background: #13131a; border: 1px solid #1e1e2a; border-radius: 16px;
-          padding: 24px; transition: all 0.3s;
-          position: relative; overflow: hidden;
+          background: #111118; border: 1px solid #1c1c28;
+          border-radius: 12px; padding: 20px 22px;
+          transition: border-color 0.25s, transform 0.2s;
+          position: relative;
         }
-        .home-card::before {
-          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-          background: var(--card-color); opacity: 0; transition: opacity 0.3s;
-        }
-        .home-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); border-color: #2a2a3a; }
-        .home-card:hover::before { opacity: 1; }
-        .home-card-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
-        .home-card-icon { font-size: 32px; flex-shrink: 0; margin-top: 2px; }
-        .home-card-name { font-size: 18px; font-weight: 700; color: #e0e0e8; margin: 0; }
-        .home-card-origin { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--card-color); }
-        .home-card-tagline { font-size: 13px; color: #6b6b80; margin-bottom: 10px; }
-        .home-card-desc { font-size: 12px; color: #6b6b80; line-height: 1.6; margin-bottom: 14px; }
-        .home-card-stack { display: flex; flex-wrap: wrap; gap: 4px; }
-        .home-card-stack span {
+        .pcard:hover { border-color: #333; transform: translateY(-2px); }
+        .pcard-top { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+        .pcard-icon { font-size: 26px; }
+        .pcard-name { font-size: 16px; font-weight: 700; color: #e0e0e8; }
+        .pcard-tag {
           font-family: 'JetBrains Mono', monospace; font-size: 10px;
-          padding: 2px 8px; border-radius: 6px;
-          color: var(--card-color); border: 1px solid color-mix(in srgb, var(--card-color) 20%, transparent);
-          background: color-mix(in srgb, var(--card-color) 5%, transparent);
+          color: var(--c); margin-top: 1px;
         }
-        .home-card-link {
-          margin-top: 14px; font-size: 12px; font-weight: 600;
-          color: var(--card-color); display: flex; align-items: center; gap: 4px;
+        .pcard-desc { font-size: 12.5px; color: #6b6b80; line-height: 1.6; margin-bottom: 12px; }
+        .pcard-stack { display: flex; flex-wrap: wrap; gap: 4px; }
+        .pcard-stack span {
+          font-family: 'JetBrains Mono', monospace; font-size: 10px;
+          background: #0a0a12; border: 1px solid #1c1c28;
+          padding: 2px 7px; border-radius: 4px; color: #6b6b80;
         }
+        .pcard-go {
+          position: absolute; top: 20px; right: 20px;
+          font-size: 11px; color: #444; transition: color 0.2s;
+        }
+        .pcard:hover .pcard-go { color: var(--c); }
 
-        /* Section label */
-        .home-section-label {
-          font-family: 'JetBrains Mono', monospace; font-size: 11px;
-          letter-spacing: 3px; text-transform: uppercase;
-          color: #6b6b80; text-align: center; margin-top: 48px;
+        /* Stack résumé en bas */
+        .stack-section { margin-top: 48px; }
+        .stack-cat-label {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+          margin-bottom: 8px;
+        }
+        .stack-cat { margin-bottom: 16px; }
+        .stack-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+        .stack-pills span {
+          font-size: 12px; padding: 4px 10px; border-radius: 6px;
+          background: #111118; border: 1px solid #1c1c28; color: #9090a0;
         }
       `}</style>
 
-      <div>
-        {/* Hero */}
-        <header className="home-hero">
-          <h1>NEXUS DevLab</h1>
-          <p className="subtitle">
-            Six projets full-stack. Un écosystème unifié.<br />
-            Ce lab rassemble les technologies maîtrisées à travers 3 ans de formation en informatique.
+      <div className="home-wrap">
+        {/* Hero — texte aligné à gauche, sobre */}
+        <header className="hero">
+          <h1 className="hero-title">NEXUS <span>DevLab</span></h1>
+          <p className="hero-sub">
+            Six projets full-stack construits sur 3 ans de formation en informatique.
+            Un labo unifié qui va du service SOAP au WebSocket temps réel,
+            du chiffrement AES à la détection d'incendies par Deep Learning.
           </p>
-          <div className="home-typed">{typedText}</div>
-          <div className="home-stack">
-            {STACK_HIGHLIGHTS.map((s) => <span key={s}>{s}</span>)}
-          </div>
+          <div className="hero-typed">{typed}</div>
         </header>
 
-        {/* Section title */}
-        <p className="home-section-label">— 6 Modules —</p>
-
-        {/* Project cards */}
-        <div className="home-grid">
+        {/* Projets */}
+        <div className="projects-label">Projets</div>
+        <div className="project-grid">
           {PROJECTS.map((p) => (
-            <Link key={p.name} to={p.to} className="home-card" style={{ "--card-color": p.color }}>
-              <div className="home-card-head">
-                <span className="home-card-icon">{p.icon}</span>
+            <Link key={p.name} to={p.to} className="pcard" style={{"--c": p.color}}>
+              <div className="pcard-top">
+                <span className="pcard-icon">{p.icon}</span>
                 <div>
-                  <h3 className="home-card-name">{p.name}</h3>
-                  <span className="home-card-origin">Projet : {p.origin}</span>
+                  <div className="pcard-name">{p.name}</div>
+                  <div className="pcard-tag">{p.tagline}</div>
                 </div>
               </div>
-              <p className="home-card-tagline">{p.tagline}</p>
-              <p className="home-card-desc">{p.description}</p>
-              <div className="home-card-stack">
-                {p.stack.map((t) => <span key={t}>{t}</span>)}
+              <p className="pcard-desc">{p.desc}</p>
+              <div className="pcard-stack">
+                {p.stack.map((s) => <span key={s}>{s}</span>)}
               </div>
-              <div className="home-card-link">Ouvrir le module →</div>
+              <span className="pcard-go">→</span>
             </Link>
           ))}
         </div>
 
-        {/* Stack section */}
-        <p className="home-section-label" style={{marginTop: 56}}>— Stack Complète —</p>
-        <div style={{marginTop: 20}}>
-          <StackGrid />
+        {/* Stack */}
+        <div className="stack-section">
+          <div className="projects-label">Stack</div>
+          {[
+            { label: "Frontend", color: "#00e5a0", items: ["React 18/19","Next.js","Tailwind","Axios","Vite","Blade","Razor","Bootstrap","Leaflet"] },
+            { label: "Backend", color: "#7c5cfc", items: ["Express","Node.js","Django/DRF","Spring Boot","PHP 8","Laravel 12","ASP.NET Core","FastAPI","PyTorch"] },
+            { label: "Auth", color: "#fbbf24", items: ["JWT","bcrypt","AES-256","Sessions PHP","NextAuth","Account Locking","Data Annotations"] },
+            { label: "Données", color: "#ff6b6b", items: ["MongoDB","SQLite","MySQL","SQL Server","EF Core","Mongoose","Eloquent"] },
+            { label: "Protocoles", color: "#38bdf8", items: ["REST","SOAP/XML","Socket.IO","WebSockets","LoRa","TDMA","PlatformIO"] },
+          ].map((cat) => (
+            <div className="stack-cat" key={cat.label}>
+              <div className="stack-cat-label" style={{color: cat.color}}>{cat.label}</div>
+              <div className="stack-pills">
+                {cat.items.map((t) => <span key={t}>{t}</span>)}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </>
-  );
-}
-
-/* Stack grid – simplified, no separate component file needed */
-const CATEGORIES = [
-  { label: "Frontend", color: "#00e5a0", techs: ["React 18/19", "Next.js 16", "Tailwind CSS", "Axios", "Vite", "React Router", "Blade", "Razor Views", "Bootstrap 5", "Leaflet"] },
-  { label: "Backend", color: "#7c5cfc", techs: ["Express.js", "Node.js", "Django/DRF", "Spring Boot", "Java", "Python", "PHP 8.2", "Laravel 12", "Eloquent", "C#", "ASP.NET Core 8", "MVC", "FastAPI", "PyTorch/LSTM"] },
-  { label: "Auth & Sécurité", color: "#fbbf24", techs: ["JWT", "bcryptjs", "NextAuth", "AES-256/CryptoJS", "Sessions PHP", "Account Locking", "DAO/VO", "CORS", "Data Annotations"] },
-  { label: "Bases de données", color: "#ff6b6b", techs: ["MongoDB", "Mongoose", "SQLite", "MySQL/PDO", "SQL Server", "EF Core", "Migrations EF"] },
-  { label: "Protocoles & Outils", color: "#38bdf8", techs: ["REST API", "SOAP/XML", "Socket.IO", "WebSockets", "xml2js", "XAMPP", "Artisan CLI", "ViewModel", "LoRa/ESP32", "TDMA", "PlatformIO"] },
-];
-
-function StackGrid() {
-  return (
-    <div style={{marginBottom: 40}}>
-      {CATEGORIES.map((cat) => (
-        <div key={cat.label} style={{marginBottom: 20}}>
-          <h4 style={{fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: "1px", textTransform: "uppercase", color: cat.color, marginBottom: 8}}>
-            {cat.label}
-          </h4>
-          <div style={{display: "flex", flexWrap: "wrap", gap: 6}}>
-            {cat.techs.map((t) => (
-              <span key={t} style={{
-                fontSize: 13, fontWeight: 500, padding: "5px 12px", borderRadius: 8,
-                background: "#13131a", border: `1px solid ${cat.color}20`, color: "#e0e0e8",
-                transition: "all 0.2s",
-              }}>{t}</span>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
