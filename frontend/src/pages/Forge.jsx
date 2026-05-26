@@ -16,6 +16,15 @@ import api from "../api";
  *   - Icônes : Font Awesome 6.4.0 (chargé via @import en tête de TF_CSS),
  *     exactement les mêmes que dans les vues Blade originales.
  *
+ * Responsive (smartphone / tablette / desktop) :
+ *   - Breakpoints type Bootstrap : 768px (md), 480px (xs).
+ *   - Navbar : burger menu coulissant sur mobile, liens horizontaux sur desktop.
+ *   - Table catalogue : transformée en cartes empilées sur mobile (data-label).
+ *   - Fruits flottants : nombre réduit sur mobile pour la perf, désactivés si
+ *     prefers-reduced-motion.
+ *   - background-attachment: scroll sur tablette/mobile (fix iOS Safari).
+ *   - Touch targets boutons : min 36px sur mobile.
+ *
  * Adaptations pour le contexte hébergé (Render / OVH) :
  *   - L'auth AES tape sur /api/store/login-encrypted (clé "CeciEstUneCleSecrete"
  *     — la même que l'original ; surchargeable côté backend via AES_SECRET_KEY).
@@ -40,29 +49,52 @@ const FRUIT_IMAGES = [
   "/fruits/ananas.png",
   "/fruits/fraise.png",
 ];
-// On utilise les mêmes clés localStorage que les autres modules (GeoIntel etc.)
-// → l'intercepteur de api.js se charge tout seul d'ajouter le Bearer token.
 const TOKEN_KEY = "nexus_token";
 const USER_KEY = "nexus_user";
-
-// Doit matcher AES_SECRET_KEY côté backend (par défaut "CeciEstUneCleSecrete").
 const AES_KEY = "CeciEstUneCleSecrete";
 
+const MOBILE_BREAKPOINT = "(max-width: 767.98px)";
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Fruits flottants — équivalent du @for de product/index.blade.php
+// Hook utilitaire : détection mobile via matchMedia (réactif au resize)
 // ─────────────────────────────────────────────────────────────────────────────
-function FruitBackground() {
-  // Mémorisé : on évite de regénérer les positions à chaque render.
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const handler = (e) => setMatches(e.matches);
+    // addEventListener est l'API moderne ; addListener est le legacy Safari < 14
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
+    };
+  }, [query]);
+  return matches;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fruits flottants — équivalent du @for de product/index.blade.php.
+// Nombre réduit sur mobile pour ménager les GPU bas de gamme.
+// ─────────────────────────────────────────────────────────────────────────────
+function FruitBackground({ isMobile }) {
+  const count = isMobile ? 7 : 15;
+  // Mémorisé pour éviter de regénérer les positions à chaque render.
+  // Re-mémorisé si isMobile change (passage tablette ↔ desktop).
   const items = useMemo(
     () =>
-      Array.from({ length: 15 }, () => ({
+      Array.from({ length: count }, () => ({
         img: FRUIT_IMAGES[Math.floor(Math.random() * FRUIT_IMAGES.length)],
-        left: Math.random() * 95, // pourcentage
-        duration: 8 + Math.random() * 12, // 8 - 20s
-        size: 30 + Math.random() * 30, // 30 - 60px
-        delay: Math.random() * 10, // 0 - 10s
+        left: Math.random() * 95,
+        duration: 8 + Math.random() * 12,
+        size: 30 + Math.random() * 30,
+        delay: Math.random() * 10,
       })),
-    []
+    [count]
   );
 
   return (
@@ -94,7 +126,7 @@ function FruitBackground() {
 const TF_CSS = `
 @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
 
-/* Wrapper plein écran SOUS la navbar nexus (sticky h-14 = 56px) */
+/* ── Wrapper plein écran SOUS la navbar nexus (sticky h-14 = 56px) ── */
 .tf-page-host {
   position: fixed;
   top: 56px;
@@ -104,10 +136,10 @@ const TF_CSS = `
   z-index: 30;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Background image — équivalent du body { background: url(...) } original */
   background: url("/tutti-frutti/background.jpg") no-repeat center center fixed;
   background-size: cover;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-overflow-scrolling: touch; /* scroll fluide iOS */
 }
 
 .tf-scope {
@@ -115,10 +147,10 @@ const TF_CSS = `
   position: relative;
 }
 
-/* ── Fond fruits animés — équivalent .fruit-background du CSS original ── */
+/* ── Fond fruits animés ── */
 .tf-scope .fruit-background {
   position: fixed;
-  top: 56px; /* sous la navbar nexus */
+  top: 56px;
   left: 0;
   width: 100%;
   height: calc(100% - 56px);
@@ -141,7 +173,7 @@ const TF_CSS = `
   100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
 }
 
-/* ── Navbar Tutti Frutti — transparente noire + blur (original) ── */
+/* ── Navbar Tutti Frutti — transparente noire + blur ── */
 .tf-scope .tf-navbar {
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
@@ -159,6 +191,7 @@ const TF_CSS = `
   justify-content: space-between;
   padding: 0 24px;
   height: 56px;
+  position: relative;
 }
 .tf-scope .tf-brand {
   font-weight: 700;
@@ -185,11 +218,28 @@ const TF_CSS = `
 }
 .tf-scope .tf-nav-link:hover { color: rgba(255,255,255,0.85); }
 .tf-scope .tf-nav-badge {
-  color: #ffc107; /* text-warning */
+  color: #ffc107;
   font-weight: bold;
 }
 
-/* ── Container principal — equivalent .container du CSS original ── */
+/* Burger : caché par défaut (desktop) ; rendu visible en media query mobile */
+.tf-scope .tf-burger {
+  display: none;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 22px;
+  padding: 8px 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+.tf-scope .tf-burger:focus-visible {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Container principal ── */
 .tf-scope .tf-container {
   max-width: 800px;
   margin: 0 auto;
@@ -198,7 +248,7 @@ const TF_CSS = `
   z-index: 1;
 }
 
-/* ── Cards Bootstrap — original : border-radius 15px, marges, ombre ── */
+/* ── Cards ── */
 .tf-scope .card {
   margin-top: 30px;
   border-radius: 15px;
@@ -209,7 +259,7 @@ const TF_CSS = `
   border: 1px solid rgba(0,0,0,0.05);
 }
 
-/* ── Titre gradient page d'accueil — exact original ── */
+/* ── Titre gradient page d'accueil ── */
 .tf-scope .gradient-static {
   background: linear-gradient(90deg, #b1dee3, #534290, #727600, #006132, #2c0000, #001a0b, #2d002cc3);
   -webkit-background-clip: text;
@@ -220,6 +270,7 @@ const TF_CSS = `
   text-align: center;
   margin: 32px 0 16px;
   font-size: 32px;
+  line-height: 1.2;
 }
 
 .tf-scope .tf-home-link {
@@ -262,7 +313,7 @@ const TF_CSS = `
 .tf-scope .d-grid { display: grid; }
 .tf-scope .d-inline-block { display: inline-block; }
 
-/* ── Alerts Bootstrap ── */
+/* ── Alerts ── */
 .tf-scope .alert {
   padding: 0.75rem 1rem;
   border-radius: 6px;
@@ -275,7 +326,7 @@ const TF_CSS = `
 .tf-scope .alert-danger  { background: #f8d7da; border-color: #f5c2c7; color: #842029; }
 .tf-scope .alert-info    { background: #cff4fc; border-color: #b6effb; color: #055160; }
 
-/* ── Forms Bootstrap ── */
+/* ── Forms ── */
 .tf-scope .form-label { display: block; margin-bottom: 0.4rem; font-size: 0.95rem; color: #212529; }
 .tf-scope .form-control {
   display: block;
@@ -300,10 +351,9 @@ const TF_CSS = `
 .tf-scope .text-center { text-align: center; }
 .tf-scope .text-danger { color: #dc3545; }
 
-/* Petit espacement entre une icône FA et le texte qui suit dans un bouton/label */
 .tf-scope .fas + * { margin-left: 0.35em; }
 
-/* ── Table Bootstrap (table-striped table-hover, thead-dark) ── */
+/* ── Table ── */
 .tf-scope .tf-table {
   width: 100%;
   border-collapse: collapse;
@@ -326,11 +376,10 @@ const TF_CSS = `
 .tf-scope .tf-table tbody tr:nth-of-type(odd)  { background: rgba(0,0,0,0.025); }
 .tf-scope .tf-table tbody tr:hover             { background: rgba(0,0,0,0.06); }
 
-/* ── Page LOGIN dédiée : gradient bleu pâle (original
-       TestAutenAuto/authentification.php) ── */
+/* ── Page LOGIN dédiée ── */
 .tf-scope .tf-login-bg {
   background: linear-gradient(135deg, #dfefff, #f6f9fc);
-  min-height: calc(100vh - 56px - 56px); /* navbar nexus + tf-navbar */
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -351,8 +400,184 @@ const TF_CSS = `
 .tf-scope .tf-switch-link { text-align: center; margin-top: 14px; font-size: 0.875rem; color: #6c757d; }
 .tf-scope .tf-switch-link a { color: #0d6efd; cursor: pointer; text-decoration: underline; }
 
-/* ── Helpers d'inline ── */
 .tf-scope .tf-actions { display: flex; gap: 4px; }
+
+/* ═════════════════════════════════════════════════════════════════════════ */
+/* RESPONSIVE                                                                 */
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+/* iOS Safari : background-attachment: fixed bugué sur mobile/tablette       */
+@media (max-width: 991.98px) {
+  .tf-page-host {
+    background-attachment: scroll;
+  }
+}
+
+/* ── Mobile + petite tablette (≤ 767.98px) ── */
+@media (max-width: 767.98px) {
+  /* Navbar : passage en burger */
+  .tf-scope .tf-navbar-inner {
+    padding: 0 16px;
+  }
+  .tf-scope .tf-burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .tf-scope .tf-nav-links {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+    z-index: 20;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+  }
+  .tf-scope .tf-nav-links.is-open {
+    max-height: 80vh;
+  }
+  .tf-scope .tf-nav-link,
+  .tf-scope .tf-nav-badge {
+    padding: 14px 24px;
+    font-size: 16px;
+    width: 100%;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    box-sizing: border-box;
+  }
+  .tf-scope .tf-nav-link:last-child,
+  .tf-scope .tf-nav-badge:last-child {
+    border-bottom: 0;
+  }
+
+  /* Container et cards plus compactes */
+  .tf-scope .tf-container {
+    padding: 0 12px 32px;
+  }
+  .tf-scope .card {
+    padding: 1rem;
+    margin-top: 20px;
+    border-radius: 12px;
+  }
+
+  /* Titre plus petit */
+  .tf-scope .gradient-static {
+    font-size: 24px;
+    margin: 24px 0 12px;
+  }
+  .tf-scope .tf-home-link {
+    font-size: 1.1rem;
+  }
+
+  /* Login mobile : padding réduit */
+  .tf-scope .tf-login-bg {
+    padding: 24px 12px;
+  }
+  .tf-scope .tf-login-card {
+    padding: 20px;
+  }
+
+  /* Touch targets : boutons un peu plus charnus */
+  .tf-scope .btn {
+    padding: 0.6rem 1rem;
+  }
+  .tf-scope .btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    min-width: 40px;
+    min-height: 36px;
+  }
+  /* Bouton "Ajouter un produit" en pleine largeur */
+  .tf-scope .btn-success.mb-3 {
+    width: 100%;
+  }
+
+  /* Table → cards empilées (technique classique data-label) */
+  .tf-scope .tf-table thead {
+    display: none;
+  }
+  .tf-scope .tf-table,
+  .tf-scope .tf-table tbody,
+  .tf-scope .tf-table tr {
+    display: block;
+    width: 100%;
+  }
+  .tf-scope .tf-table tr,
+  .tf-scope .tf-table tbody tr:nth-of-type(odd) {
+    background: #fff !important;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .tf-scope .tf-table tbody tr:hover {
+    background: #fff !important;
+  }
+  .tf-scope .tf-table td {
+    display: block;
+    border: none;
+    padding: 6px 0;
+    text-align: left;
+  }
+  .tf-scope .tf-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #6c757d;
+    margin-bottom: 2px;
+  }
+  .tf-scope .tf-table td.tf-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 10px;
+    margin-top: 6px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .tf-scope .tf-table td.tf-actions .btn-sm {
+    flex: 1;
+  }
+
+  /* Fruits un poil moins opaques pour ne pas surcharger l'écran */
+  .tf-scope .fruit {
+    opacity: 0.45;
+  }
+}
+
+/* ── Très petit écran (≤ 480px) ── */
+@media (max-width: 480px) {
+  .tf-scope .tf-brand { font-size: 16px; }
+  .tf-scope .gradient-static {
+    font-size: 20px;
+    margin: 20px 0 10px;
+  }
+  .tf-scope .card { padding: 0.85rem; }
+  .tf-scope .tf-container { padding: 0 10px 24px; }
+  .tf-scope .tf-login-card { padding: 16px; }
+  .tf-scope .btn { font-size: 0.95rem; }
+  .tf-scope .alert { font-size: 0.9rem; padding: 0.6rem 0.8rem; }
+}
+
+/* ── Respect des préférences de réduction du mouvement ── */
+@media (prefers-reduced-motion: reduce) {
+  .tf-scope .fruit { animation: none; display: none; }
+  .tf-scope .btn,
+  .tf-scope .tf-nav-links { transition: none; }
+}
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -390,16 +615,20 @@ function validateRegisterClient({ name, email, password, password_confirmation }
 // Page principale
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Forge() {
-  // Auth (persistée dans localStorage pour survivre aux changements de "page")
+  // Détection responsive (réagit aux changements de taille / orientation)
+  const isMobile = useMediaQuery(MOBILE_BREAKPOINT);
+
+  // Auth (persistée dans localStorage)
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem(USER_KEY)) || null; } catch { return null; }
   });
 
-  // Routing interne (équivalent des routes Laravel /, /product, /product/create, /register, ...)
-  const [page, setPage] = useState("home"); // home | products | create | edit | login | register
-  const [pendingRedirect, setPendingRedirect] = useState(null); // page à atteindre après login
+  // Routing interne
+  const [page, setPage] = useState("home");
+  const [pendingRedirect, setPendingRedirect] = useState(null);
   const [flashSuccess, setFlashSuccess] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Catalogue
   const [products, setProducts] = useState([]);
@@ -407,7 +636,7 @@ export default function Forge() {
 
   // Formulaire create / edit
   const [form, setForm] = useState({ ...EMPTY_PRODUCT });
-  const [productErrors, setProductErrors] = useState({}); // {champ: msg}
+  const [productErrors, setProductErrors] = useState({});
   const [productError, setProductError] = useState("");
 
   // Login state
@@ -439,7 +668,11 @@ export default function Forge() {
     else localStorage.removeItem(USER_KEY);
   }, [user]);
 
-  // Charge le catalogue dès qu'on entre sur products/home (lecture publique)
+  // Si l'utilisateur passe en desktop (resize), ferme le menu mobile.
+  useEffect(() => {
+    if (!isMobile && mobileMenuOpen) setMobileMenuOpen(false);
+  }, [isMobile, mobileMenuOpen]);
+
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
@@ -456,14 +689,13 @@ export default function Forge() {
     if (page === "home" || page === "products") loadProducts();
   }, [page, loadProducts]);
 
-  // ── Navigation ──
+  // ── Navigation (ferme aussi le menu mobile) ──
   function go(p) {
     setFlashSuccess("");
     setPage(p);
+    setMobileMenuOpen(false);
   }
 
-  // Tente d'aller sur une page protégée. Si pas loggé, redirige vers login et
-  // mémorise la destination — équivalent du ExternalAuth middleware Laravel.
   function goProtected(p, ctx) {
     if (!isLogged) {
       setPendingRedirect({ page: p, ctx });
@@ -487,7 +719,6 @@ export default function Forge() {
       setToken(res.data.token);
       setUser(res.data.user);
       setLoginPassword("");
-      // redirection mémorisée ou retour à l'accueil
       if (pendingRedirect) {
         const { page: target, ctx } = pendingRedirect;
         if (ctx) setForm(ctx);
@@ -518,7 +749,6 @@ export default function Forge() {
     e.preventDefault();
     setRegErrors({}); setRegLoading(true);
 
-    // Validation client immédiate
     const clientErrors = validateRegisterClient({
       name: regName, email: regEmail,
       password: regPass, password_confirmation: regConfirm,
@@ -570,7 +800,6 @@ export default function Forge() {
       if (err.response?.status === 422) {
         setProductErrors(err.response.data.errors || {});
       } else if (err.response?.status === 401) {
-        // Token expiré / invalide → on déconnecte et on renvoie au login
         setToken(null); setUser(null);
         setPendingRedirect({ page: form.id ? "edit" : "create", ctx: form });
         go("login");
@@ -593,11 +822,6 @@ export default function Forge() {
     }
   }
 
-  // ── Token JWT pour les requêtes protégées ──
-  // L'intercepteur de ../api.js lit déjà localStorage["nexus_token"] et
-  // l'ajoute en header Authorization. Rien à faire ici — on partage simplement
-  // la même clé que les autres modules (GeoIntel, etc.).
-
   // ─────────────────────────────────────────────────────────────────────────
   // Rendu
   // ─────────────────────────────────────────────────────────────────────────
@@ -605,7 +829,7 @@ export default function Forge() {
     <div className="tf-page-host">
       <style>{TF_CSS}</style>
       <div className="tf-scope">
-        <FruitBackground />
+        <FruitBackground isMobile={isMobile} />
 
         {/* ── Navbar ── */}
         <nav className="tf-navbar">
@@ -613,7 +837,19 @@ export default function Forge() {
             <span className="tf-brand" onClick={() => go("home")}>
               <i className="fas fa-store"></i> Tutti Frutti
             </span>
-            <div className="tf-nav-links">
+
+            {/* Burger mobile (affiché en CSS uniquement sur mobile) */}
+            <button
+              type="button"
+              className="tf-burger"
+              aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((o) => !o)}
+            >
+              <i className={`fas fa-${mobileMenuOpen ? "times" : "bars"}`}></i>
+            </button>
+
+            <div className={`tf-nav-links${mobileMenuOpen ? " is-open" : ""}`}>
               <a className="tf-nav-link" onClick={() => go("products")}>Produits</a>
               {!isLogged && (
                 <a className="tf-nav-link" onClick={() => go("register")}>Créer un compte</a>
@@ -632,7 +868,7 @@ export default function Forge() {
           </div>
         </nav>
 
-        {/* ── Page LOGIN — fond gradient bleu pâle dédié ── */}
+        {/* ── Page LOGIN ── */}
         {page === "login" && (
           <div className="tf-login-bg">
             <div className="tf-login-card">
@@ -654,6 +890,7 @@ export default function Forge() {
                     type="email" className="form-control"
                     value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
                     placeholder="Entrez votre email"
+                    autoComplete="email"
                   />
                 </div>
                 <div className="mb-3">
@@ -662,6 +899,7 @@ export default function Forge() {
                     type="password" className="form-control"
                     value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Entrez votre mot de passe"
+                    autoComplete="current-password"
                   />
                 </div>
                 <div className="d-grid">
@@ -682,14 +920,14 @@ export default function Forge() {
           </div>
         )}
 
-        {/* ── Pages catalogue / accueil / create / edit / register (tf-container) ── */}
+        {/* ── Pages catalogue / accueil / create / edit / register ── */}
         {page !== "login" && (
           <div className="tf-container">
             {flashSuccess && (
               <div className="alert alert-success mt-4">{flashSuccess}</div>
             )}
 
-            {/* ── HOME — produit/index.blade.php (l'original utilise des EMOJIS ici) ── */}
+            {/* HOME */}
             {page === "home" && (
               <>
                 <h1 className="gradient-static">Bienvenue sur la page d'accueil</h1>
@@ -720,7 +958,7 @@ export default function Forge() {
               </>
             )}
 
-            {/* ── PRODUCTS — product/product.blade.php (catalogue public) ── */}
+            {/* PRODUCTS — catalogue public */}
             {page === "products" && (
               <div className="card">
                 <h3 style={{ margin: "0 0 16px" }}>Catalogue des Produits</h3>
@@ -763,14 +1001,15 @@ export default function Forge() {
                     ) : (
                       products.map((p) => (
                         <tr key={p.id}>
-                          <td>{p.name}</td>
-                          <td>{p.description}</td>
-                          <td>{Number(p.price).toFixed(2)} $/LB</td>
+                          <td data-label="Nom">{p.name}</td>
+                          <td data-label="Description">{p.description}</td>
+                          <td data-label="Prix">{Number(p.price).toFixed(2)} $/LB</td>
                           {isLogged && (
                             <td className="tf-actions">
                               <button
                                 className="btn btn-sm btn-warning"
                                 title="Éditer"
+                                aria-label="Éditer le produit"
                                 onClick={() => { setForm({ id: p.id, name: p.name, description: p.description, price: p.price }); go("edit"); }}
                               >
                                 <i className="fas fa-edit"></i>
@@ -778,6 +1017,7 @@ export default function Forge() {
                               <button
                                 className="btn btn-sm btn-danger"
                                 title="Supprimer"
+                                aria-label="Supprimer le produit"
                                 onClick={() => deleteProduct(p.id)}
                               >
                                 <i className="fas fa-trash-alt"></i>
@@ -792,7 +1032,7 @@ export default function Forge() {
               </div>
             )}
 
-            {/* ── CREATE — product/create.blade.php ── */}
+            {/* CREATE */}
             {page === "create" && (
               <div className="card mt-4">
                 <h2 className="text-center" style={{ marginBottom: 24 }}>
@@ -833,6 +1073,7 @@ export default function Forge() {
                       type="number" step="0.01" className="form-control"
                       value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
                       placeholder="Ex. : 1.99"
+                      inputMode="decimal"
                     />
                   </div>
                   <div className="d-grid">
@@ -844,7 +1085,7 @@ export default function Forge() {
               </div>
             )}
 
-            {/* ── EDIT — product/edit.blade.php ── */}
+            {/* EDIT */}
             {page === "edit" && (
               <div className="card mt-4">
                 <h2 className="text-center" style={{ marginBottom: 24 }}>
@@ -882,6 +1123,7 @@ export default function Forge() {
                     <input
                       type="number" step="0.01" className="form-control"
                       value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      inputMode="decimal"
                     />
                   </div>
                   <div className="d-grid">
@@ -893,7 +1135,7 @@ export default function Forge() {
               </div>
             )}
 
-            {/* ── REGISTER — auth/register.blade.php ── */}
+            {/* REGISTER */}
             {page === "register" && (
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Créer un compte</h3>
@@ -914,6 +1156,7 @@ export default function Forge() {
                     <input
                       type="text" className="form-control"
                       value={regName} onChange={(e) => setRegName(e.target.value)}
+                      autoComplete="name"
                     />
                   </div>
                   <div className="mb-3">
@@ -921,6 +1164,7 @@ export default function Forge() {
                     <input
                       type="text" className="form-control"
                       value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
+                      autoComplete="email"
                     />
                   </div>
                   <div className="mb-3">
@@ -928,6 +1172,7 @@ export default function Forge() {
                     <input
                       type="password" className="form-control"
                       value={regPass} onChange={(e) => setRegPass(e.target.value)}
+                      autoComplete="new-password"
                     />
                     <small style={{ fontSize: 11, color: "#6c757d" }}>
                       8 caractères min., 1 majuscule, 1 minuscule, 1 chiffre, 1 symbole
@@ -938,6 +1183,7 @@ export default function Forge() {
                     <input
                       type="password" className="form-control"
                       value={regConfirm} onChange={(e) => setRegConfirm(e.target.value)}
+                      autoComplete="new-password"
                     />
                   </div>
                   <button type="submit" className="btn btn-primary w-100" disabled={regLoading}>

@@ -157,7 +157,7 @@ const TOOKAH_CSS = `
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 56px - 100px); /* navbar + bouton header */
+  min-height: calc(100% - 100px); /* 100% du host fixed, on réserve la zone du bouton toggle */
   text-align: center;
   width: 90%;
   max-width: 800px;
@@ -186,6 +186,139 @@ const TOOKAH_CSS = `
   top: 76px; /* 56px navbar + 20px d'origine */
   left: 20px;
   z-index: 1000;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════ */
+/* RESPONSIVE                                                                 */
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile + petite tablette (≤ 767.98px) ── */
+@media (max-width: 767.98px) {
+  /* Bouton toggle plus compact, collé au coin */
+  .tookah-scope .app-toggle-button {
+    top: 64px;
+    left: 12px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    margin: 0;
+  }
+
+  /* Cartes plus compactes, presque pleine largeur */
+  .tookah-scope .section-card {
+    padding: 1rem;
+    margin: 0.8rem auto;
+    max-width: 92%;
+    border-radius: 12px;
+  }
+
+  /* Texte du jeu plus modeste */
+  .tookah-scope .game-text {
+    font-size: 1.2rem;
+    line-height: 1.35;
+  }
+
+  /* Titres standards plus contenus (h2 du final-card etc.) */
+  .tookah-scope h1 { font-size: 1.5rem; }
+  .tookah-scope h2 { font-size: 1.3rem; }
+  .tookah-scope h3 { font-size: 1.15rem; }
+  .tookah-scope h4 { font-size: 1.05rem; }
+
+  /* Boutons Vrai/Faux : wrap si peu d'espace */
+  .tookah-scope .answer-buttons {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .tookah-scope .answer-buttons button {
+    padding: 0.7rem 1.2rem;
+    font-size: 1rem;
+    flex: 1 1 auto;
+    min-width: 110px;
+  }
+
+  /* Input pseudo : pleine largeur jusqu'à 280px */
+  .tookah-scope input {
+    width: 100%;
+    max-width: 280px;
+    box-sizing: border-box;
+    display: block;
+    margin: 0.5rem auto;
+  }
+
+  /* Liste des réponses + leaderboard */
+  .tookah-scope ul li,
+  .tookah-scope ol li {
+    font-size: 1rem;
+    padding: 0.5rem 0.8rem;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Centered block : padding-top pour ne pas être chevauché par le bouton fixed */
+  .tookah-scope .centered-block {
+    padding-top: 50px;
+    min-height: calc(100% - 60px);
+    width: 95%;
+  }
+}
+
+/* ── Très petit écran (≤ 480px) ── */
+@media (max-width: 480px) {
+  .tookah-scope .app-toggle-button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.78rem;
+  }
+
+  .tookah-scope .section-card {
+    padding: 0.85rem;
+    margin: 0.7rem auto;
+  }
+
+  .tookah-scope .game-text {
+    font-size: 1.05rem;
+  }
+  .tookah-scope h1 { font-size: 1.3rem; }
+  .tookah-scope h2 { font-size: 1.15rem; }
+  .tookah-scope h3 { font-size: 1.05rem; }
+
+  /* Boutons answer empilés sur très petit écran */
+  .tookah-scope .answer-buttons {
+    flex-direction: column;
+  }
+  .tookah-scope .answer-buttons button {
+    width: 100%;
+  }
+
+  /* Tous les boutons un poil plus compacts */
+  .tookah-scope button {
+    padding: 0.7rem 1.2rem;
+    font-size: 1rem;
+  }
+}
+
+/* ── Écrans tactiles : pas d'effet hover collé ──
+   :hover sur touchscreen reste actif après le tap ; on neutralise. */
+@media (hover: none) {
+  .tookah-scope button:hover {
+    background: #21264b;
+    transform: none;
+  }
+  .tookah-scope .correct:hover {
+    background: #28a745 !important;
+  }
+  .tookah-scope .wrong:hover {
+    background: #dc3545 !important;
+  }
+}
+
+/* ── Respect des préférences de réduction de mouvement ── */
+@media (prefers-reduced-motion: reduce) {
+  .tookah-scope button {
+    transition: none;
+  }
+  .tookah-scope button:hover {
+    transform: none;
+  }
 }
 `;
 
@@ -349,6 +482,10 @@ function ClientComponent() {
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && joinGame()}
+            autoComplete="nickname"
+            autoCapitalize="words"
+            inputMode="text"
+            maxLength={30}
           />
           <button onClick={joinGame}>Rejoindre le jeu</button>
         </div>
