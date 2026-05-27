@@ -92,6 +92,30 @@ export default function StockOS() {
           color: var(--primary); border: 1px solid rgba(37,99,235,0.2);
           background: rgba(37,99,235,0.05); padding: 4px 12px; border-radius: 99px; margin-bottom: 12px;
         }
+
+        /* ── Responsive ──────────────────────────────────────────────────── */
+        @media (max-width: 640px) {
+          .inv-wrap { padding: 16px 12px; }
+          .inv-container h1 { font-size: 22px; }
+          /* Form : passer en 1 colonne sur mobile */
+          .inv-grid { grid-template-columns: 1fr; }
+          .inv-grid .full { grid-column: 1; }
+          /* Liste : empiler info + actions verticalement */
+          .inv-list-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .item-actions {
+            justify-content: flex-end;
+          }
+          .item-actions .inv-btn { flex: 0 0 auto; }
+        }
+        @media (max-width: 380px) {
+          /* Onglets en pleine largeur partagée */
+          .inv-tabs { gap: 6px; }
+          .inv-tab { flex: 1; padding: 8px 6px; font-size: 13px; text-align: center; }
+        }
       `}</style>
 
       <div className="inv-wrap">

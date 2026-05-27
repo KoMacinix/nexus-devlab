@@ -91,12 +91,14 @@ const productRoutes = require("./routes/products");
 const storeRoutes = require("./routes/store");
 const ticketRoutes = require("./routes/tickets");
 const floranetRoutes = require("./routes/floranet");
+const floranetAuthRoutes = require("./routes/floranetAuth");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/countries", countryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/store", storeRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/floranet/auth", floranetAuthRoutes);
 app.use("/api/floranet", floranetRoutes);
 
 // ─────────────────────────────────────────────────────────────────────────────

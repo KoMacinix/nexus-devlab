@@ -135,6 +135,31 @@ export default function ShowPass() {
           background-color: rgba(0,0,0,0.8); color: white; text-align: center;
           padding: 10px; font-size: 12px;
         }
+
+        /* ── Responsive ───────────────────────────────────────────────────── */
+        @media (max-width: 767.98px) {
+          .tc-nav { padding: 0 16px; height: 56px; flex-wrap: wrap; gap: 4px; }
+          .tc-nav .brand { font-size: 15px; }
+          .tc-nav .brand img { height: 32px; }
+          .tc-nav .nav-link { font-size: 11px; opacity: 0.6; }
+          .tc-content { padding: 24px 12px; }
+          .tc-content h1 { font-size: 22px; }
+          /* Cartes ticket en pleine largeur (au lieu de 30%) */
+          .tc-ticket { width: 100%; min-width: 0; max-width: 360px; }
+          .tc-tickets { justify-content: center; }
+          /* Form padding interne réduit */
+          .tc-form-container { padding: 18px 16px; max-width: 100%; }
+          .tc-form-container h2, .tc-form-container h3 { font-size: 18px; }
+          /* Historique table → forcée à la taille texte plus petit */
+          .tc-history table { font-size: 12px; }
+          .tc-history th, .tc-history td { padding: 6px 4px; }
+        }
+        @media (max-width: 480px) {
+          .tc-content h1 { font-size: 19px; }
+          .tc-ticket { padding: 16px; }
+          .tc-ticket .price { font-size: 19px; }
+          .tc-form-container { padding: 14px 12px; }
+        }
       `}</style>
 
       <div className="tc-wrap">
