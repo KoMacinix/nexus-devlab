@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import api from "../api";
 
-/* ── Original Inventaire design: dark navy (#0f172a), #111827 cards, blue primary, red danger ── */
+/* ── Inventaire (StockOS) — original design : dark navy (#0f172a), #111827 cards, blue primary, red danger.
+   Wrapper plein écran SOUS la navbar nexus (h-14 = 56px) — même pattern que Tookah / Tutti Frutti / FloraNet. ── */
 
 const EMPTY = { id: null, name: "", description: "", product_type: "", quantity: 0, min_threshold: 0 };
 
@@ -40,15 +41,33 @@ export default function StockOS() {
   return (
     <>
       <style>{`
+        /* ── Wrapper plein écran SOUS la navbar nexus (sticky h-14 = 56px),
+           même pattern que .tf-page-host (Tutti Frutti) et .tookah-page-host (Tookah). ── */
+        .inv-page-host {
+          position: fixed;
+          top: 56px;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 30;
+          overflow-y: auto;
+          overflow-x: hidden;
+          background: #0f172a;
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+          -webkit-overflow-scrolling: touch;
+        }
+
         .inv-wrap {
           --bg: #0f172a; --card: #111827; --text: #e5e7eb; --muted: #9ca3af;
           --primary: #2563eb; --danger: #dc2626; --border: #1f2937;
-          min-height: calc(100vh - 200px); background: var(--bg); color: var(--text);
-          margin: -16px; padding: 24px 16px;
-          font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+          min-height: 100%; background: var(--bg); color: var(--text);
+          padding: 32px 24px;
         }
         .inv-container { max-width: 920px; margin: 0 auto; }
-        .inv-container h1 { margin: 0 0 12px; font-weight: 700; }
+        .inv-container h1 {
+          margin: 0 0 12px; font-weight: 700;
+          display: flex; align-items: center; gap: 10px;
+        }
         .inv-container h2.section-title { margin: 16px 0 8px; font-weight: 600; }
         .inv-tabs { display: flex; gap: 8px; margin: 12px 0 20px; }
         .inv-tab {
@@ -95,12 +114,10 @@ export default function StockOS() {
 
         /* ── Responsive ──────────────────────────────────────────────────── */
         @media (max-width: 640px) {
-          .inv-wrap { padding: 16px 12px; }
+          .inv-wrap { padding: 20px 14px; }
           .inv-container h1 { font-size: 22px; }
-          /* Form : passer en 1 colonne sur mobile */
           .inv-grid { grid-template-columns: 1fr; }
           .inv-grid .full { grid-column: 1; }
-          /* Liste : empiler info + actions verticalement */
           .inv-list-item {
             flex-direction: column;
             align-items: stretch;
@@ -112,61 +129,69 @@ export default function StockOS() {
           .item-actions .inv-btn { flex: 0 0 auto; }
         }
         @media (max-width: 380px) {
-          /* Onglets en pleine largeur partagée */
           .inv-tabs { gap: 6px; }
           .inv-tab { flex: 1; padding: 8px 6px; font-size: 13px; text-align: center; }
         }
       `}</style>
 
-      <div className="inv-wrap">
-        <div className="inv-container">
-          <div className="inv-tag">Projet : Inventaire · Django REST Framework</div>
-          <h1>📦 Gestion d'inventaire</h1>
+      <div className="inv-page-host">
+        <div className="inv-wrap">
+          <div className="inv-container">
+            <div className="inv-tag">Projet : Inventaire · Django REST Framework</div>
+            <h1>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7c5cfc" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <path d="M3.27 6.96 12 12.01l8.73-5.05"/>
+                <path d="M12 22.08V12"/>
+              </svg>
+              Gestion d'inventaire
+            </h1>
 
-          <div className="inv-tabs">
-            <button className={`inv-tab ${tab === "inventory" ? "active" : ""}`} onClick={() => { setTab("inventory"); setForm({...EMPTY}); }}>Inventaire</button>
-            <button className={`inv-tab ${tab === "shopping" ? "active" : ""}`} onClick={() => { setTab("shopping"); setForm({...EMPTY}); }}>Liste d'achat</button>
-          </div>
-
-          {tab === "inventory" && (
-            <div className="inv-card" style={{marginBottom:16}}>
-              <h2 style={{margin:"0 0 12px", fontWeight:600}}>{form.id ? "Modifier un produit" : "Ajouter un produit"}</h2>
-              <div className="inv-grid">
-                <label><span>Nom</span><input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} /></label>
-                <label><span>Type</span><input value={form.product_type} onChange={(e) => setForm({...form, product_type: e.target.value})} /></label>
-                <label><span>Quantité</span><input type="number" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} /></label>
-                <label><span>Seuil min</span><input type="number" value={form.min_threshold} onChange={(e) => setForm({...form, min_threshold: e.target.value})} /></label>
-                <label className="full"><span>Description</span><textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} /></label>
-              </div>
-              <div className="inv-actions">
-                <button className="inv-btn primary" onClick={save}>{form.id ? "Enregistrer" : "Ajouter"}</button>
-                {form.id && <button className="inv-btn" onClick={() => setForm({...EMPTY})}>Annuler</button>}
-              </div>
+            <div className="inv-tabs">
+              <button className={`inv-tab ${tab === "inventory" ? "active" : ""}`} onClick={() => { setTab("inventory"); setForm({...EMPTY}); }}>Inventaire</button>
+              <button className={`inv-tab ${tab === "shopping" ? "active" : ""}`} onClick={() => { setTab("shopping"); setForm({...EMPTY}); }}>Liste d'achat</button>
             </div>
-          )}
 
-          <h2 className="section-title">{tab === "inventory" ? "Produits" : "À acheter (quantité < seuil)"}</h2>
+            {tab === "inventory" && (
+              <div className="inv-card" style={{marginBottom:16}}>
+                <h2 style={{margin:"0 0 12px", fontWeight:600}}>{form.id ? "Modifier un produit" : "Ajouter un produit"}</h2>
+                <div className="inv-grid">
+                  <label><span>Nom</span><input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} /></label>
+                  <label><span>Type</span><input value={form.product_type} onChange={(e) => setForm({...form, product_type: e.target.value})} /></label>
+                  <label><span>Quantité</span><input type="number" value={form.quantity} onChange={(e) => setForm({...form, quantity: e.target.value})} /></label>
+                  <label><span>Seuil min</span><input type="number" value={form.min_threshold} onChange={(e) => setForm({...form, min_threshold: e.target.value})} /></label>
+                  <label className="full"><span>Description</span><textarea value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} /></label>
+                </div>
+                <div className="inv-actions">
+                  <button className="inv-btn primary" onClick={save}>{form.id ? "Enregistrer" : "Ajouter"}</button>
+                  {form.id && <button className="inv-btn" onClick={() => setForm({...EMPTY})}>Annuler</button>}
+                </div>
+              </div>
+            )}
 
-          {error && <div className="inv-alert">{error}</div>}
+            <h2 className="section-title">{tab === "inventory" ? "Produits" : "À acheter (quantité < seuil)"}</h2>
 
-          {loading ? <p>Chargement…</p> : items.length === 0 ? <p>Aucun élément.</p> : (
-            <ul className="inv-list">
-              {items.map((it) => (
-                <li key={it.id} className="inv-list-item">
-                  <div className="item-info">
-                    <strong>{it.name}</strong> — {it.product_type} — Qté: {it.quantity} — Seuil: {it.min_threshold}
-                    {it.description && <> — <em>{it.description}</em></>}
-                  </div>
-                  {tab === "inventory" && (
-                    <div className="item-actions">
-                      <button className="inv-btn" onClick={() => setForm(it)}>Éditer</button>
-                      <button className="inv-btn danger" onClick={() => del(it.id)}>Supprimer</button>
+            {error && <div className="inv-alert">{error}</div>}
+
+            {loading ? <p>Chargement…</p> : items.length === 0 ? <p>Aucun élément.</p> : (
+              <ul className="inv-list">
+                {items.map((it) => (
+                  <li key={it.id} className="inv-list-item">
+                    <div className="item-info">
+                      <strong>{it.name}</strong> — {it.product_type} — Qté: {it.quantity} — Seuil: {it.min_threshold}
+                      {it.description && <> — <em>{it.description}</em></>}
                     </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+                    {tab === "inventory" && (
+                      <div className="item-actions">
+                        <button className="inv-btn" onClick={() => setForm(it)}>Éditer</button>
+                        <button className="inv-btn danger" onClick={() => del(it.id)}>Supprimer</button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </>

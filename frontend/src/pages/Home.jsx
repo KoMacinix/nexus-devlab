@@ -1,13 +1,21 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import {
+  GeoIntelIcon,
+  StockOSIcon,
+  TookahIcon,
+  TuttiFruttiIcon,
+  TicketConcertIcon,
+  FloraNetIcon,
+} from "../components/ProjectIcons";
 
 const PROJECTS = [
-  { icon: "🌍", name: "GeoIntel", origin: "Pays", tagline: "SOAP · JWT · Spring Boot", desc: "Client SOAP pour interroger des données géopolitiques, avec authentification JWT et hachage bcrypt.", color: "#00e5a0", to: "/geointel", stack: ["Next.js", "Spring Boot", "SOAP/XML", "JWT", "bcrypt"] },
-  { icon: "📦", name: "StockOS", origin: "Inventaire", tagline: "REST API · CRUD · Django", desc: "Gestion d'inventaire avec CRUD complet et liste d'achat auto quand le stock descend sous le seuil.", color: "#7c5cfc", to: "/stockos", stack: ["React", "Django/DRF", "SQLite", "Axios"] },
-  { icon: "📖", name: "Tookah", origin: "Tookah", tagline: "Socket.IO · Temps réel", desc: "Quiz multijoueur en temps réel. Lobby dynamique, timer, leaderboard live, historique MongoDB.", color: "#ff6b6b", to: "/arena", stack: ["Socket.IO", "Express", "MongoDB", "Mongoose"] },
-  { icon: "🍊", name: "Tutti Frutti", origin: "htdocs", tagline: "Laravel · AES · PHP Auth", desc: "Auth chiffrée AES, verrouillage de compte, CRUD produits style Laravel avec Eloquent et Blade.", color: "#fbbf24", to: "/forge", stack: ["PHP 8.2", "Laravel 12", "AES-256", "Eloquent", "MySQL"] },
-  { icon: "🎫", name: "TicketConcert", origin: "TicketConcert", tagline: "ASP.NET Core · EF Core", desc: "Billetterie concert avec Entity Framework, Data Annotations, ViewModel et migrations SQL Server.", color: "#38bdf8", to: "/showpass", stack: ["C#", "ASP.NET Core 8", "EF Core", "SQL Server", "Razor"] },
-  { icon: "🌿", name: "FloraNet", origin: "Floranet_v4", tagline: "IoT · LSTM · Leaflet", desc: "Détection d'incendies forestiers avec capteurs LoRa/ESP32, modèle LSTM, carte interactive et dashboard.", color: "#ff6b00", to: "/floranet", stack: ["PyTorch", "FastAPI", "LoRa", "Leaflet", "TDMA"] },
+  { Icon: GeoIntelIcon,      name: "GeoIntel",     origin: "Pays",        tagline: "SOAP · JWT · Spring Boot",      desc: "Client SOAP pour interroger des données géopolitiques, avec authentification JWT et hachage bcrypt.", color: "#00e5a0", to: "/geointel", stack: ["Next.js", "Spring Boot", "SOAP/XML", "JWT", "bcrypt"] },
+  { Icon: StockOSIcon,       name: "StockOS",      origin: "Inventaire",  tagline: "REST API · CRUD · Django",      desc: "Gestion d'inventaire avec CRUD complet et liste d'achat auto quand le stock descend sous le seuil.", color: "#7c5cfc", to: "/stockos",  stack: ["React", "Django/DRF", "SQLite", "Axios"] },
+  { Icon: TookahIcon,        name: "Tookah",       origin: "Tookah",      tagline: "Socket.IO · Temps réel",        desc: "Quiz multijoueur en temps réel. Lobby dynamique, timer, leaderboard live, historique MongoDB.",      color: "#ff6b6b", to: "/arena",    stack: ["Socket.IO", "Express", "MongoDB", "Mongoose"] },
+  { Icon: TuttiFruttiIcon,   name: "Tutti Frutti", origin: "htdocs",      tagline: "Laravel · AES · PHP Auth",      desc: "Auth chiffrée AES, verrouillage de compte, CRUD produits style Laravel avec Eloquent et Blade.",     color: "#fbbf24", to: "/forge",    stack: ["PHP 8.2", "Laravel 12", "AES-256", "Eloquent", "MySQL"] },
+  { Icon: TicketConcertIcon, name: "TicketConcert",origin: "TicketConcert",tagline: "ASP.NET Core · EF Core",       desc: "Billetterie concert avec Entity Framework, Data Annotations, ViewModel et migrations SQL Server.",   color: "#38bdf8", to: "/showpass", stack: ["C#", "ASP.NET Core 8", "EF Core", "SQL Server", "Razor"] },
+  { Icon: FloraNetIcon,      name: "FloraNet",     origin: "Floranet_v4", tagline: "IoT · LSTM · Leaflet",          desc: "Détection d'incendies forestiers avec capteurs LoRa/ESP32, modèle LSTM, carte interactive et dashboard.", color: "#ff6b00", to: "/floranet", stack: ["PyTorch", "FastAPI", "LoRa", "Leaflet", "TDMA"] },
 ];
 
 const TYPED_PHRASES = [
@@ -100,7 +108,15 @@ export default function Home() {
         }
         .pcard:hover { border-color: #333; transform: translateY(-2px); }
         .pcard-top { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-        .pcard-icon { font-size: 26px; }
+        .pcard-icon {
+          width: 38px; height: 38px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--c) 12%, transparent);
+          border: 1px solid color-mix(in srgb, var(--c) 25%, transparent);
+          color: var(--c);
+          flex-shrink: 0;
+        }
         .pcard-name { font-size: 16px; font-weight: 700; color: #e0e0e8; }
         .pcard-tag {
           font-family: 'JetBrains Mono', monospace; font-size: 10px;
@@ -152,7 +168,9 @@ export default function Home() {
           {PROJECTS.map((p) => (
             <Link key={p.name} to={p.to} className="pcard" style={{"--c": p.color}}>
               <div className="pcard-top">
-                <span className="pcard-icon">{p.icon}</span>
+                <span className="pcard-icon">
+                  <p.Icon size={22} />
+                </span>
                 <div>
                   <div className="pcard-name">{p.name}</div>
                   <div className="pcard-tag">{p.tagline}</div>

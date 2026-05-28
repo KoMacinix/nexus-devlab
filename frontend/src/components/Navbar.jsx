@@ -1,14 +1,23 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import {
+  GeoIntelIcon,
+  StockOSIcon,
+  TookahIcon,
+  TuttiFruttiIcon,
+  TicketConcertIcon,
+  FloraNetIcon,
+} from "./ProjectIcons";
 
+// Couleurs alignées sur le thème nexus (cf. tailwind.config.js : nexus.green / purple / red / yellow / blue + orange-400 pour FloraNet)
 const NAV = [
-  { to: "/", label: "Accueil" },
-  { to: "/geointel", label: "🌍 GeoIntel", color: "text-nexus-green" },
-  { to: "/stockos", label: "📦 StockOS", color: "text-nexus-purple" },
-  { to: "/arena", label: "📖 Tookah", color: "text-nexus-red" },
-  { to: "/forge", label: "🍊 Tutti Frutti", color: "text-nexus-yellow" },
-  { to: "/showpass", label: "🎫 TicketConcert", color: "text-nexus-blue" },
-  { to: "/floranet", label: "🌿 FloraNet", color: "text-orange-400" },
+  { to: "/",          label: "Accueil",       Icon: null,               color: null,         tw: "text-white" },
+  { to: "/geointel",  label: "GeoIntel",      Icon: GeoIntelIcon,       color: "#00e5a0",    tw: "text-nexus-green" },
+  { to: "/stockos",   label: "StockOS",       Icon: StockOSIcon,        color: "#7c5cfc",    tw: "text-nexus-purple" },
+  { to: "/arena",     label: "Tookah",        Icon: TookahIcon,         color: "#ff6b6b",    tw: "text-nexus-red" },
+  { to: "/forge",     label: "Tutti Frutti",  Icon: TuttiFruttiIcon,    color: "#fbbf24",    tw: "text-nexus-yellow" },
+  { to: "/showpass",  label: "TicketConcert", Icon: TicketConcertIcon,  color: "#38bdf8",    tw: "text-nexus-blue" },
+  { to: "/floranet",  label: "FloraNet",      Icon: FloraNetIcon,       color: "#fb923c",    tw: "text-orange-400" },
 ];
 
 export default function Navbar() {
@@ -42,16 +51,16 @@ export default function Navbar() {
   }, [open]);
 
   const linkClass = (n) =>
-    `px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+    `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
       pathname === n.to
-        ? `bg-nexus-surface ${n.color || "text-white"} border border-nexus-border`
+        ? `bg-nexus-surface ${n.tw} border border-nexus-border`
         : "text-nexus-muted hover:text-nexus-text"
     }`;
 
   const mobileLinkClass = (n) =>
-    `block px-4 py-3 rounded-md text-sm font-semibold transition-colors ${
+    `flex items-center gap-2.5 px-4 py-3 rounded-md text-sm font-semibold transition-colors ${
       pathname === n.to
-        ? `bg-nexus-surface ${n.color || "text-white"} border border-nexus-border`
+        ? `bg-nexus-surface ${n.tw} border border-nexus-border`
         : "text-nexus-muted hover:text-nexus-text hover:bg-nexus-surface/60"
     }`;
 
@@ -69,6 +78,9 @@ export default function Navbar() {
         <div className="hidden md:flex gap-1">
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} className={linkClass(n)}>
+              {n.Icon && (
+                <n.Icon size={14} color={pathname === n.to ? n.color : "currentColor"} />
+              )}
               {n.label}
             </Link>
           ))}
@@ -121,6 +133,9 @@ export default function Navbar() {
         <div className="px-4 py-3 flex flex-col gap-1">
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} className={mobileLinkClass(n)}>
+              {n.Icon && (
+                <n.Icon size={18} color={pathname === n.to ? n.color : "currentColor"} />
+              )}
               {n.label}
             </Link>
           ))}

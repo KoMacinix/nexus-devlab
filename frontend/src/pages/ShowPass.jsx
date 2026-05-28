@@ -41,11 +41,26 @@ export default function ShowPass() {
   return (
     <>
       <style>{`
+        /* ── Wrapper plein écran SOUS la navbar nexus (sticky h-14 = 56px),
+           même pattern que .tf-page-host (Tutti Frutti), .tookah-page-host (Tookah),
+           .geo-page-host (GeoIntel) et .inv-page-host (StockOS). ── */
+        .tc-page-host {
+          position: fixed;
+          top: 56px;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 30;
+          overflow-y: auto;
+          overflow-x: hidden;
+          background: url('/ticketconcert/background.jpg') no-repeat center center fixed;
+          background-size: cover;
+          -webkit-overflow-scrolling: touch;
+        }
+
         /* ── Background : vraie image concert (original: background.jpg cover) ── */
         .tc-wrap {
-          margin: -16px; min-height: calc(100vh - 200px);
-          background: url('/ticketconcert/background.jpg') no-repeat center center;
-          background-size: cover;
+          min-height: 100%;
           font-family: system-ui, -apple-system, sans-serif; color: white;
           display: flex; flex-direction: column;
         }
@@ -162,6 +177,7 @@ export default function ShowPass() {
         }
       `}</style>
 
+      <div className="tc-page-host">
       <div className="tc-wrap">
         <div className="tc-nav">
           <span className="brand"><img src="/ticketconcert/logo.png" alt="TicketConcert" /> TicketConcert</span>
@@ -253,6 +269,7 @@ export default function ShowPass() {
           </div>
         </div>
         <div className="tc-footer">© TicketConcert — Billetterie de concert</div>
+      </div>
       </div>
     </>
   );

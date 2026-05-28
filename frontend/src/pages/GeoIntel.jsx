@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../api";
 
-/* ── GeoIntel design: light theme with geographic/satellite map background ── */
+/* ── GeoIntel design: light theme, vraie carte du monde en fond (motif de points), wrapper plein écran SOUS la navbar nexus (comme Tookah / FloraNet / Tutti Frutti) ── */
 
 export default function GeoIntel() {
   const [token, setToken] = useState(localStorage.getItem("nexus_token"));
@@ -45,28 +45,34 @@ export default function GeoIntel() {
   return (
     <>
       <style>{`
-        .geo-wrap {
-          min-height: calc(100vh - 200px);
-          color: #222;
-          margin: -16px; padding: 32px 16px;
+        /* ── Wrapper plein écran SOUS la navbar nexus (sticky h-14 = 56px),
+           même pattern que .tf-page-host (Tutti Frutti) et .tookah-page-host (Tookah). ── */
+        .geo-page-host {
+          position: fixed;
+          top: 56px;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 30;
+          overflow-y: auto;
+          overflow-x: hidden;
+          background: #e8efe8;
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          -webkit-overflow-scrolling: touch;
+        }
+        /* Carte du monde en fond (vraie carte SVG en motif de points) */
+        .geo-map-bg {
+          position: absolute; inset: 0; z-index: 0; pointer-events: none;
+          background: url('/geointel/world-map.svg') no-repeat center center;
+          background-size: cover;
+          opacity: 0.18;
+        }
+        .geo-wrap {
+          min-height: 100%;
+          color: #222;
+          padding: 48px 16px;
           display: flex; justify-content: center;
           position: relative;
-          background: #e8efe8;
-        }
-        /* Map tile background */
-        .geo-map-bg {
-          position: absolute; inset: 0; z-index: 0;
-          background:
-            url('https://tile.openstreetmap.org/3/3/2.png'),
-            url('https://tile.openstreetmap.org/3/4/2.png'),
-            url('https://tile.openstreetmap.org/3/3/3.png'),
-            url('https://tile.openstreetmap.org/3/4/3.png');
-          background-position: 0 0, 256px 0, 0 256px, 256px 256px;
-          background-size: 256px 256px;
-          background-repeat: repeat;
-          opacity: 0.15;
-          filter: grayscale(0.3) contrast(1.1);
         }
         .geo-inner { width: 100%; max-width: 600px; position: relative; z-index: 1; }
         .geo-card {
@@ -115,76 +121,90 @@ export default function GeoIntel() {
           text-transform: uppercase; color: #2563eb; border: 1px solid #2563eb30;
           background: #2563eb08; padding: 4px 12px; border-radius: 99px; margin-bottom: 16px;
         }
+        @media (max-width: 640px) {
+          .geo-wrap { padding: 24px 12px; }
+          .geo-card { padding: 20px 18px; }
+        }
       `}</style>
 
-      <div className="geo-wrap">
+      <div className="geo-page-host">
         <div className="geo-map-bg" />
-        <div className="geo-inner">
-          <div style={{textAlign:"center", marginBottom: 24}}>
-            <div className="geo-tag">Projet : Pays · SOAP · Spring Boot</div>
-            <h1 style={{margin:"0 0 4px", fontSize:28, fontWeight:700, color:"#222"}}>🌍 GeoIntel</h1>
-            <p style={{color:"#64748b", fontSize:14}}>Client SOAP — Authentification JWT — Parsing XML</p>
-          </div>
-
-          {!token ? (
-            <div className="geo-card">
-              <h2>Connexion</h2>
-              <p style={{fontSize:14, color:"#64748b", marginBottom:12}}>
-                Utilise ton courriel de démo et le mot de passe indiqué pour accéder au formulaire.
-              </p>
-              <form onSubmit={handleLogin}>
-                <div className="geo-field">
-                  <label>Email</label>
-                  <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} />
-                </div>
-                <div className="geo-field">
-                  <label>Mot de passe</label>
-                  <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} />
-                </div>
-                {loginErr && <p className="geo-error">{loginErr}</p>}
-                <button type="submit" className="geo-btn geo-btn-primary geo-big-btn" disabled={loginLoading}>
-                  {loginLoading ? "Connexion..." : "Se connecter"}
-                </button>
-              </form>
+        <div className="geo-wrap">
+          <div className="geo-inner">
+            <div style={{textAlign:"center", marginBottom: 24}}>
+              <div className="geo-tag">Projet : Pays · SOAP · Spring Boot</div>
+              <h1 style={{margin:"0 0 4px", fontSize:28, fontWeight:700, color:"#222", display:"flex", alignItems:"center", justifyContent:"center", gap:10}}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M2 12h20"/>
+                  <path d="M12 2a15 15 0 0 1 0 20"/>
+                  <path d="M12 2a15 15 0 0 0 0 20"/>
+                </svg>
+                GeoIntel
+              </h1>
+              <p style={{color:"#64748b", fontSize:14}}>Client SOAP — Authentification JWT — Parsing XML</p>
             </div>
-          ) : (
-            <div className="geo-card">
-              <h2>Recherche d'information sur un pays</h2>
-              <p>Connecté en tant que : <strong>{user?.email}</strong></p>
-              <button onClick={handleLogout} className="geo-btn geo-btn-outline" style={{marginBottom:16}}>Se déconnecter</button>
 
-              <div className="geo-field">
-                <label>Nom du pays (Spain, Poland, United Kingdom)</label>
-                <select value={selected} onChange={(e)=>setSelected(e.target.value)} style={{maxWidth:"100%"}}>
-                  {countries.map((c)=><option key={c.name} value={c.name}>{c.name}</option>)}
-                </select>
-              </div>
-              <button className="geo-btn geo-btn-primary" onClick={handleSearch} disabled={searchLoading}>
-                {searchLoading ? "Requête en cours..." : "Rechercher"}
-              </button>
-
-              {searchErr && <p className="geo-error">Erreur : {searchErr}</p>}
-
-              {result && (
-                <div className="geo-result">
-                  <h3 style={{margin:"0 0 8px", fontSize:16}}>Résultat (JSON)</h3>
-                  <p><strong>Pays :</strong> {result.name}</p>
-                  <p><strong>Capitale :</strong> {result.capital}</p>
-                  <p><strong>Population :</strong> {result.population.toLocaleString("fr")}</p>
-                  <p><strong>Devise :</strong> {result.currency}</p>
-                </div>
-              )}
-
-              {rawXml && (
-                <div style={{marginTop:12}}>
-                  <button onClick={()=>setShowXml(!showXml)} className="geo-btn geo-btn-outline" style={{fontSize:13}}>
-                    {showXml ? "Masquer" : "Voir"} le XML SOAP brut
+            {!token ? (
+              <div className="geo-card">
+                <h2>Connexion</h2>
+                <p style={{fontSize:14, color:"#64748b", marginBottom:12}}>
+                  Utilise ton courriel de démo et le mot de passe indiqué pour accéder au formulaire.
+                </p>
+                <form onSubmit={handleLogin}>
+                  <div className="geo-field">
+                    <label>Email</label>
+                    <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} />
+                  </div>
+                  <div className="geo-field">
+                    <label>Mot de passe</label>
+                    <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} />
+                  </div>
+                  {loginErr && <p className="geo-error">{loginErr}</p>}
+                  <button type="submit" className="geo-btn geo-btn-primary geo-big-btn" disabled={loginLoading}>
+                    {loginLoading ? "Connexion..." : "Se connecter"}
                   </button>
-                  {showXml && <pre className="geo-xml">{rawXml}</pre>}
+                </form>
+              </div>
+            ) : (
+              <div className="geo-card">
+                <h2>Recherche d'information sur un pays</h2>
+                <p>Connecté en tant que : <strong>{user?.email}</strong></p>
+                <button onClick={handleLogout} className="geo-btn geo-btn-outline" style={{marginBottom:16}}>Se déconnecter</button>
+
+                <div className="geo-field">
+                  <label>Nom du pays (Spain, Poland, United Kingdom)</label>
+                  <select value={selected} onChange={(e)=>setSelected(e.target.value)} style={{maxWidth:"100%"}}>
+                    {countries.map((c)=><option key={c.name} value={c.name}>{c.name}</option>)}
+                  </select>
                 </div>
-              )}
-            </div>
-          )}
+                <button className="geo-btn geo-btn-primary" onClick={handleSearch} disabled={searchLoading}>
+                  {searchLoading ? "Requête en cours..." : "Rechercher"}
+                </button>
+
+                {searchErr && <p className="geo-error">Erreur : {searchErr}</p>}
+
+                {result && (
+                  <div className="geo-result">
+                    <h3 style={{margin:"0 0 8px", fontSize:16}}>Résultat (JSON)</h3>
+                    <p><strong>Pays :</strong> {result.name}</p>
+                    <p><strong>Capitale :</strong> {result.capital}</p>
+                    <p><strong>Population :</strong> {result.population.toLocaleString("fr")}</p>
+                    <p><strong>Devise :</strong> {result.currency}</p>
+                  </div>
+                )}
+
+                {rawXml && (
+                  <div style={{marginTop:12}}>
+                    <button onClick={()=>setShowXml(!showXml)} className="geo-btn geo-btn-outline" style={{fontSize:13}}>
+                      {showXml ? "Masquer" : "Voir"} le XML SOAP brut
+                    </button>
+                    {showXml && <pre className="geo-xml">{rawXml}</pre>}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
