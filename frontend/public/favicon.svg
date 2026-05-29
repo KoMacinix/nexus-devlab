@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <linearGradient id="gGray" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#888888"/>
+    <stop offset="100%" stop-color="#ffffff"/>
+  </linearGradient>
+  <clipPath id="cp">
+    <rect x="0" y="0" width="200" height="200" rx="36"/>
+  </clipPath>
+</defs>
+<style>
+  .cursor-bar { animation: blink 1s step-end infinite; }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+</style>
+<rect x="0" y="0" width="200" height="200" rx="36" fill="#0a0a0f"/>
+<rect x="0" y="0" width="200" height="200" rx="36" fill="none" stroke="url(#gGray)" stroke-width="2.5"/>
+<rect x="4" y="4" width="192" height="60" rx="30" fill="url(#gGray)" opacity="0.06" clip-path="url(#cp)"/>
+<rect class="cursor-bar" x="59" y="74" width="6" height="52" rx="3" fill="url(#gGray)"/>
+<path d="M65 100 L80 84" fill="none" stroke="url(#gGray)" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M65 100 L80 116" fill="none" stroke="url(#gGray)" stroke-width="4.5" stroke-linecap="round"/>
+<rect x="88" y="89" width="26" height="24" rx="12" fill="none" stroke="url(#gGray)" stroke-width="4.5"/>
+<circle cx="12" cy="12" r="2" fill="url(#gGray)" opacity="0.4"/>
+<circle cx="188" cy="12" r="2" fill="url(#gGray)" opacity="0.4"/>
+<circle cx="12" cy="188" r="2" fill="url(#gGray)" opacity="0.4"/>
+<circle cx="188" cy="188" r="2" fill="url(#gGray)" opacity="0.4"/>
+</svg>
