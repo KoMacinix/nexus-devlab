@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useLanguage } from "../i18n";
 import {
   GeoIntelIcon,
   StockOSIcon,
@@ -11,7 +12,7 @@ import {
 
 // Couleurs alignées sur le thème nexus (cf. tailwind.config.js : nexus.green / purple / red / yellow / blue + orange-400 pour FloraNet)
 const NAV = [
-  { to: "/",          label: "Accueil",       Icon: null,               color: null,         tw: "text-white" },
+  { to: "/",          label: { fr: "Accueil", en: "Home" }, Icon: null, color: null, tw: "text-white" },
   { to: "/geointel",  label: "GeoIntel",      Icon: GeoIntelIcon,       color: "#00e5a0",    tw: "text-nexus-green" },
   { to: "/stockos",   label: "StockOS",       Icon: StockOSIcon,        color: "#7c5cfc",    tw: "text-nexus-purple" },
   { to: "/arena",     label: "Tookah",        Icon: TookahIcon,         color: "#ff6b6b",    tw: "text-nexus-red" },
@@ -22,6 +23,7 @@ const NAV = [
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const { language, setLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
 
   // Ferme le menu mobile à chaque changement de route
@@ -75,52 +77,56 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop : liens visibles à partir de md (≥ 768px) */}
-        <div className="hidden md:flex gap-1">
+        <div className="hidden md:flex items-center gap-1">
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} className={linkClass(n)}>
               {n.Icon && (
                 <n.Icon size={14} color={pathname === n.to ? n.color : "currentColor"} />
               )}
-              {n.label}
+              {typeof n.label === "string" ? n.label : n.label[language]}
             </Link>
           ))}
+          <LanguageSwitcher language={language} setLanguage={setLanguage} />
         </div>
 
-        {/* Burger : visible < md */}
-        <button
-          type="button"
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-md text-nexus-text hover:bg-nexus-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-purple"
-          aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-          aria-expanded={open}
-          aria-controls="nexus-mobile-menu"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {/* Hamburger / Close en SVG (3 lignes ↔ X) */}
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        <div className="md:hidden flex items-center gap-1.5">
+          <LanguageSwitcher language={language} setLanguage={setLanguage} compact />
+          {/* Burger : visible < md */}
+          <button
+            type="button"
+            className="flex items-center justify-center w-10 h-10 rounded-md text-nexus-text hover:bg-nexus-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-nexus-purple"
+            aria-label={open ? (language === "fr" ? "Fermer le menu" : "Close menu") : (language === "fr" ? "Ouvrir le menu" : "Open menu")}
+            aria-expanded={open}
+            aria-controls="nexus-mobile-menu"
+            onClick={() => setOpen((v) => !v)}
           >
-            {open ? (
-              <>
-                <line x1="6" y1="6" x2="18" y2="18" />
-                <line x1="18" y1="6" x2="6" y2="18" />
-              </>
-            ) : (
-              <>
-                <line x1="4" y1="7" x2="20" y2="7" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="17" x2="20" y2="17" />
-              </>
-            )}
-          </svg>
-        </button>
+            {/* Hamburger / Close en SVG (3 lignes ↔ X) */}
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {open ? (
+                <>
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </>
+              ) : (
+                <>
+                  <line x1="4" y1="7" x2="20" y2="7" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="17" x2="20" y2="17" />
+                </>
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Panneau mobile — slide-down sous la navbar */}
@@ -136,11 +142,36 @@ export default function Navbar() {
               {n.Icon && (
                 <n.Icon size={18} color={pathname === n.to ? n.color : "currentColor"} />
               )}
-              {n.label}
+              {typeof n.label === "string" ? n.label : n.label[language]}
             </Link>
           ))}
         </div>
       </div>
     </nav>
+  );
+}
+
+function LanguageSwitcher({ language, setLanguage, compact = false }) {
+  const label = language === "fr" ? "Changer la langue" : "Switch language";
+
+  return (
+    <div
+      className={`language-switcher ${compact ? "language-switcher-compact" : ""}`}
+      role="group"
+      aria-label={label}
+    >
+      {(["fr", "en"]).map((code) => (
+        <button
+          key={code}
+          type="button"
+          className={language === code ? "active" : ""}
+          aria-pressed={language === code}
+          aria-label={code === "fr" ? "Français" : "English"}
+          onClick={() => setLanguage(code)}
+        >
+          {code.toUpperCase()}
+        </button>
+      ))}
+    </div>
   );
 }

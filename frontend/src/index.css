@@ -89,3 +89,55 @@ body::after {
 .nexus-btn:disabled {
   @apply opacity-40 cursor-default;
 }
+
+/* ── Sélecteur de langue FR / EN ── */
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  margin-left: 5px;
+  border: 1px solid #2a2a38;
+  border-radius: 7px;
+  background: #111118;
+}
+
+.language-switcher button {
+  min-width: 29px;
+  height: 25px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #77778c;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.language-switcher button:hover {
+  color: #e0e0e8;
+}
+
+.language-switcher button:focus-visible {
+  outline: 2px solid #7c5cfc;
+  outline-offset: 2px;
+}
+
+.language-switcher button.active {
+  background: #7c5cfc;
+  color: #fff;
+}
+
+.language-switcher-compact {
+  margin-left: 0;
+}
+
+@media (max-width: 767px) {
+  .language-switcher button {
+    min-width: 27px;
+    height: 27px;
+  }
+}

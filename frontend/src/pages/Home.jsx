@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useLanguage } from "../i18n";
 import {
   GeoIntelIcon,
   StockOSIcon,
@@ -10,20 +11,18 @@ import {
 } from "../components/ProjectIcons";
 
 const PROJECTS = [
-  { Icon: GeoIntelIcon,      name: "GeoIntel",     origin: "Pays",        tagline: "SOAP · JWT · Spring Boot",      desc: "Client SOAP pour interroger des données géopolitiques, avec authentification JWT et hachage bcrypt.", color: "#00e5a0", to: "/geointel", stack: ["Next.js", "Spring Boot", "SOAP/XML", "JWT", "bcrypt"] },
-  { Icon: StockOSIcon,       name: "StockOS",      origin: "Inventaire",  tagline: "REST API · CRUD · Django",      desc: "Gestion d'inventaire avec CRUD complet et liste d'achat auto quand le stock descend sous le seuil.", color: "#7c5cfc", to: "/stockos",  stack: ["React", "Django/DRF", "SQLite", "Axios"] },
-  { Icon: TookahIcon,        name: "Tookah",       origin: "Tookah",      tagline: "Socket.IO · Temps réel",        desc: "Quiz multijoueur en temps réel. Lobby dynamique, timer, leaderboard live, historique MongoDB.",      color: "#ff6b6b", to: "/arena",    stack: ["Socket.IO", "Express", "MongoDB", "Mongoose"] },
-  { Icon: TuttiFruttiIcon,   name: "Tutti Frutti", origin: "htdocs",      tagline: "Laravel · AES · PHP Auth",      desc: "Auth chiffrée AES, verrouillage de compte, CRUD produits style Laravel avec Eloquent et Blade.",     color: "#fbbf24", to: "/forge",    stack: ["PHP 8.2", "Laravel 12", "AES-256", "Eloquent", "MySQL"] },
-  { Icon: TicketConcertIcon, name: "TicketConcert",origin: "TicketConcert",tagline: "ASP.NET Core · EF Core",       desc: "Billetterie concert avec Entity Framework, Data Annotations, ViewModel et migrations SQL Server.",   color: "#38bdf8", to: "/showpass", stack: ["C#", "ASP.NET Core 8", "EF Core", "SQL Server", "Razor"] },
-  { Icon: FloraNetIcon,      name: "FloraNet",     origin: "Floranet_v4", tagline: "IoT · LSTM · Leaflet",          desc: "Détection d'incendies forestiers avec capteurs LoRa/ESP32, modèle LSTM, carte interactive et dashboard.", color: "#ff6b00", to: "/floranet", stack: ["PyTorch", "FastAPI", "LoRa", "Leaflet", "TDMA"] },
+  { Icon: GeoIntelIcon, name: "GeoIntel", tagline: { fr: "SOAP · JWT · Spring Boot", en: "SOAP · JWT · Spring Boot" }, desc: { fr: "Client SOAP pour interroger des données géopolitiques, avec authentification JWT et hachage bcrypt.", en: "SOAP client for querying geopolitical data, with JWT authentication and bcrypt hashing." }, color: "#00e5a0", to: "/geointel", stack: ["Next.js", "Spring Boot", "SOAP/XML", "JWT", "bcrypt"] },
+  { Icon: StockOSIcon, name: "StockOS", tagline: { fr: "REST API · CRUD · Django", en: "REST API · CRUD · Django" }, desc: { fr: "Gestion d'inventaire avec CRUD complet et liste d'achat auto quand le stock descend sous le seuil.", en: "Inventory management with full CRUD and an automatic shopping list when stock falls below its threshold." }, color: "#7c5cfc", to: "/stockos", stack: ["React", "Django/DRF", "SQLite", "Axios"] },
+  { Icon: TookahIcon, name: "Tookah", tagline: { fr: "Socket.IO · Temps réel", en: "Socket.IO · Real time" }, desc: { fr: "Quiz multijoueur en temps réel. Lobby dynamique, timer, leaderboard live, historique MongoDB.", en: "Real-time multiplayer quiz with a dynamic lobby, timer, live leaderboard and MongoDB history." }, color: "#ff6b6b", to: "/arena", stack: ["Socket.IO", "Express", "MongoDB", "Mongoose"] },
+  { Icon: TuttiFruttiIcon, name: "Tutti Frutti", tagline: { fr: "Laravel · AES · PHP Auth", en: "Laravel · AES · PHP Auth" }, desc: { fr: "Auth chiffrée AES, verrouillage de compte, CRUD produits style Laravel avec Eloquent et Blade.", en: "AES-encrypted authentication, account lockout and Laravel-style product CRUD with Eloquent and Blade." }, color: "#fbbf24", to: "/forge", stack: ["PHP 8.2", "Laravel 12", "AES-256", "Eloquent", "MySQL"] },
+  { Icon: TicketConcertIcon, name: "TicketConcert", tagline: { fr: "ASP.NET Core · EF Core", en: "ASP.NET Core · EF Core" }, desc: { fr: "Billetterie concert avec Entity Framework, Data Annotations, ViewModel et migrations SQL Server.", en: "Concert ticketing with Entity Framework, Data Annotations, ViewModels and SQL Server migrations." }, color: "#38bdf8", to: "/showpass", stack: ["C#", "ASP.NET Core 8", "EF Core", "SQL Server", "Razor"] },
+  { Icon: FloraNetIcon, name: "FloraNet", tagline: { fr: "IoT · LSTM · Leaflet", en: "IoT · LSTM · Leaflet" }, desc: { fr: "Détection d'incendies forestiers avec capteurs LoRa/ESP32, modèle LSTM, carte interactive et dashboard.", en: "Wildfire detection with LoRa/ESP32 sensors, an LSTM model, an interactive map and a dashboard." }, color: "#ff6b00", to: "/floranet", stack: ["PyTorch", "FastAPI", "LoRa", "Leaflet", "TDMA"] },
 ];
 
-const TYPED_PHRASES = [
-  "du SOAP au temps réel.",
-  "du PHP chiffré au MVC .NET.",
-  "de l'IoT au Deep Learning.",
-  "6 projets. 1 écosystème.",
-];
+const TYPED_PHRASES = {
+  fr: ["du SOAP au temps réel.", "du PHP chiffré au MVC .NET.", "de l'IoT au Deep Learning.", "6 projets. 1 écosystème."],
+  en: ["from SOAP to real time.", "from encrypted PHP to .NET MVC.", "from IoT to Deep Learning.", "6 projects. 1 ecosystem."],
+};
 
 function useTypewriter(phrases, typeSpeed = 60, deleteSpeed = 30, pause = 2500) {
   const [text, setText] = useState("");
@@ -64,7 +63,8 @@ function useTypewriter(phrases, typeSpeed = 60, deleteSpeed = 30, pause = 2500) 
 }
 
 export default function Home() {
-  const typed = useTypewriter(TYPED_PHRASES);
+  const { language } = useLanguage();
+  const typed = useTypewriter(TYPED_PHRASES[language]);
 
   return (
     <>
@@ -155,15 +155,15 @@ export default function Home() {
         <header className="hero">
           <h1 className="hero-title">NEXUS <span>DevLab</span></h1>
           <p className="hero-sub">
-            Six projets full-stack construits sur 3 ans de formation en informatique.
-            Un labo unifié qui va du service SOAP au WebSocket temps réel,
-            du chiffrement AES à la détection d'incendies par Deep Learning.
+            {language === "fr"
+              ? "Six projets full-stack construits sur 3 ans de formation en informatique. Un labo unifié qui va du service SOAP au WebSocket temps réel, du chiffrement AES à la détection d'incendies par Deep Learning."
+              : "Six full-stack projects built over three years of computer science training. One unified lab spanning SOAP services, real-time WebSockets, AES encryption and Deep Learning wildfire detection."}
           </p>
           <div className="hero-typed">{typed}</div>
         </header>
 
         {/* Projets */}
-        <div className="projects-label">Projets</div>
+        <div className="projects-label">{language === "fr" ? "Projets" : "Projects"}</div>
         <div className="project-grid">
           {PROJECTS.map((p) => (
             <Link key={p.name} to={p.to} className="pcard" style={{"--c": p.color}}>
@@ -173,10 +173,10 @@ export default function Home() {
                 </span>
                 <div>
                   <div className="pcard-name">{p.name}</div>
-                  <div className="pcard-tag">{p.tagline}</div>
+                  <div className="pcard-tag">{p.tagline[language]}</div>
                 </div>
               </div>
-              <p className="pcard-desc">{p.desc}</p>
+              <p className="pcard-desc">{p.desc[language]}</p>
               <div className="pcard-stack">
                 {p.stack.map((s) => <span key={s}>{s}</span>)}
               </div>
@@ -192,8 +192,8 @@ export default function Home() {
             { label: "Frontend", color: "#00e5a0", items: ["React 18/19","Next.js","Tailwind","Axios","Vite","Blade","Razor","Bootstrap","Leaflet"] },
             { label: "Backend", color: "#7c5cfc", items: ["Express","Node.js","Django/DRF","Spring Boot","PHP 8","Laravel 12","ASP.NET Core","FastAPI","PyTorch"] },
             { label: "Auth", color: "#fbbf24", items: ["JWT","bcrypt","AES-256","Sessions PHP","NextAuth","Account Locking","Data Annotations"] },
-            { label: "Données", color: "#ff6b6b", items: ["MongoDB","SQLite","MySQL","SQL Server","EF Core","Mongoose","Eloquent"] },
-            { label: "Protocoles", color: "#38bdf8", items: ["REST","SOAP/XML","Socket.IO","WebSockets","LoRa","TDMA","PlatformIO"] },
+            { label: language === "fr" ? "Données" : "Data", color: "#ff6b6b", items: ["MongoDB","SQLite","MySQL","SQL Server","EF Core","Mongoose","Eloquent"] },
+            { label: language === "fr" ? "Protocoles" : "Protocols", color: "#38bdf8", items: ["REST","SOAP/XML","Socket.IO","WebSockets","LoRa","TDMA","PlatformIO"] },
           ].map((cat) => (
             <div className="stack-cat" key={cat.label}>
               <div className="stack-cat-label" style={{color: cat.color}}>{cat.label}</div>
