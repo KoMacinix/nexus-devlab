@@ -76,7 +76,7 @@ export default function ShowPass() {
         .tc-nav .brand img { height: 40px; width: auto; }
         .tc-nav .nav-link { color: white; font-size: 13px; opacity: 0.8; }
 
-        .tc-content { padding: 32px 16px; max-width: 900px; margin: 0 auto; flex: 1; }
+        .tc-content { width: 100%; padding: 32px 16px; max-width: 900px; margin: 0 auto; flex: 1; }
         .tc-content h1 { text-align: center; margin: 0 0 8px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
         .tc-content p.sub { text-align: center; opacity: 0.8; margin-bottom: 32px; }
 
@@ -110,7 +110,7 @@ export default function ShowPass() {
           padding: 20px; border-radius: 10px;
           box-shadow: 0 4px 8px rgba(0,0,0,0.3);
           backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-          max-width: 600px; margin: 0 auto; color: white;
+          width: 100%; max-width: 600px; margin: 0 auto; color: white;
         }
         .tc-form-container h2, .tc-form-container h3 { color: white; margin: 0 0 12px; }
         .tc-form-container label { display: block; font-size: 14px; margin-bottom: 4px; color: #ccc; }

@@ -93,6 +93,8 @@ const ENGLISH = {
   "Voir tous les produits": "View all products",
   "Insérer un produit": "Insert a product",
   "Mettre à jour un produit": "Update a product",
+  "➕ Insérer un produit": "➕ Insert a product",
+  "✏️ Mettre à jour un produit": "✏️ Update a product",
   "Bienvenue sur la page d'accueil": "Welcome to the home page",
   "Vous devez vous connecter pour ajouter ou modifier des produits.": "You must sign in to add or edit products.",
 
@@ -115,6 +117,21 @@ const ENGLISH = {
   "QUITTER LE JEU": "LEAVE GAME",
   "REPRENDRE LE JEU": "RESUME GAME",
   "En attente d'autres joueurs...": "Waiting for other players...",
+  "En attente des autres joueurs...": "Waiting for the other players...",
+  "♻️ Partie interrompue, en attente de joueurs...": "♻️ Game interrupted, waiting for players...",
+  "Toutes les questions ont été posées !": "All questions have been asked!",
+  "vrai": "true",
+  "faux": "false",
+  "La capitale du Canada est Ottawa ?": "Is Ottawa the capital of Canada?",
+  "L'élément chimique Fe est le cuivre ?": "Is the chemical element Fe copper?",
+  "La Première Guerre mondiale a commencé en 1914 ?": "Did the First World War begin in 1914?",
+  "L'océan le plus vaste du monde est l'Atlantique ?": "Is the Atlantic the world's largest ocean?",
+  "Shakespeare a écrit Roméo et Juliette ?": "Did Shakespeare write Romeo and Juliet?",
+  "La lumière voyage plus vite que le son ?": "Does light travel faster than sound?",
+  "Le Sahara est le plus grand désert du monde ?": "Is the Sahara the world's largest desert?",
+  "Python est un langage compilé ?": "Is Python a compiled language?",
+  "HTTP utilise le port 443 par défaut ?": "Does HTTP use port 443 by default?",
+  "MongoDB est une base de données NoSQL ?": "Is MongoDB a NoSQL database?",
 
   "Bienvenue sur TicketConcert": "Welcome to TicketConcert",
   "Réservez vos billets maintenant !": "Book your tickets now!",
@@ -365,7 +382,7 @@ function applyLanguage(root, language) {
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === "en" ? "en" : "fr";
+    return saved === "fr" ? "fr" : "en";
   });
 
   useEffect(() => {
