@@ -15,6 +15,10 @@ import { BATTERY_LOW } from "./constants/thresholds";
 import { auth, UNAUTH_EVENT } from "./services/auth";
 
 import "./styles/style.css";
+// CSS requis par Leaflet (positionnement des tuiles, contrôles, popups).
+// Importé après style.css : à spécificité égale, ses marges/paddings
+// (popups, attribution) doivent primer sur le reset `.floranet-root *`.
+import "leaflet/dist/leaflet.css";
 
 /**
  * App Floranet — composant racine de la sous-app (montée par pages/FloraNet.jsx).
